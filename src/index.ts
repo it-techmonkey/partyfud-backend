@@ -15,6 +15,17 @@ app.get("/", (_req, res) => {
 // API routes with prefixes: /api/user, /api/admin, /api/caterer
 app.use("/api", apiRoutes);
 
+// Global error handler for unhandled errors
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: {
+      message: err.message || 'Internal server error',
+    },
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

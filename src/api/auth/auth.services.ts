@@ -14,6 +14,7 @@ export interface SignupData {
   password: string;
   company_name?: string;
   type: UserType;
+  image_url?: string;
 }
 
 export interface LoginData {

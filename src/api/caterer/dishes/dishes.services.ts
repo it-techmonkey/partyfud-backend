@@ -3,22 +3,23 @@ import prisma from "../../../lib/prisma";
 export interface CreateDishData {
   name: string;
   image_url?: string;
-  cuisine_type_id: string;
-  category_id: string;
-  sub_category_id: string;
+  cuisine_type: string; // Changed from cuisine_type_id to cuisine_type (name)
+  category: string; // Changed from category_id to category (name)
+  sub_category: string; // Changed from sub_category_id to sub_category (name)
   quantity_in_gm?: number;
   pieces?: number;
   price: number;
   currency?: string;
   is_active?: boolean;
+  freeform_ids?: string[]; // Array of FreeForm IDs
 }
 
 export interface UpdateDishData {
   name?: string;
   image_url?: string;
-  cuisine_type_id?: string;
-  category_id?: string;
-  sub_category_id?: string;
+  cuisine_type?: string; // Changed from cuisine_type_id to cuisine_type (name)
+  category?: string; // Changed from category_id to category (name)
+  sub_category?: string; // Changed from sub_category_id to sub_category (name)
   quantity_in_gm?: number;
   pieces?: number;
   price?: number;
@@ -99,35 +100,64 @@ export const createDish = async (catererId: string, data: CreateDishData) => {
     throw new Error("Invalid caterer");
   }
 
-  // Verify related entities exist
-  const [cuisineType, category, subCategory] = await Promise.all([
-    prisma.cuisineType.findUnique({ where: { id: data.cuisine_type_id } }),
-    prisma.category.findUnique({ where: { id: data.category_id } }),
-    prisma.subCategory.findUnique({ where: { id: data.sub_category_id } }),
-  ]);
+  // Look up cuisine type by name
+  const cuisineType = await prisma.cuisineType.findUnique({
+    where: { name: data.cuisine_type },
+  });
 
   if (!cuisineType) {
-    throw new Error("Invalid cuisine type");
+    throw new Error(`Cuisine type "${data.cuisine_type}" not found`);
   }
+
+  // Look up category by name
+  const category = await prisma.category.findUnique({
+    where: { name: data.category },
+  });
+
   if (!category) {
-    throw new Error("Invalid category");
+    throw new Error(`Category "${data.category}" not found`);
   }
+
+  // Look up sub category by name and category_id (since subcategory names are unique per category)
+  const subCategory = await prisma.subCategory.findFirst({
+    where: {
+      name: data.sub_category,
+      category_id: category.id,
+    },
+  });
+
   if (!subCategory) {
-    throw new Error("Invalid sub category");
+    throw new Error(`Sub category "${data.sub_category}" not found for category "${data.category}"`);
   }
 
   const dish = await prisma.dish.create({
     data: {
-      ...data,
+      name: data.name,
+      image_url: data.image_url,
+      cuisine_type_id: cuisineType.id,
+      category_id: category.id,
+      sub_category_id: subCategory.id,
       caterer_id: catererId,
-      currency: data.currency || "AED",
+      quantity_in_gm: data.quantity_in_gm,
       pieces: data.pieces ?? 1,
+      price: data.price,
+      currency: data.currency || "AED",
       is_active: data.is_active ?? true,
+      free_forms: data.freeform_ids && data.freeform_ids.length > 0 ? {
+        create: data.freeform_ids.map(freeformId => ({
+          freeform_id: freeformId,
+        })),
+      } : undefined,
     },
     include: {
       cuisine_type: true,
       category: true,
       sub_category: true,
+      free_forms: {
+        include: {
+          freeform: true,
+        },
+      },
     },
   });
 
@@ -154,37 +184,75 @@ export const updateDish = async (
     throw new Error("Dish not found or you don't have permission to update it");
   }
 
-  // Verify related entities if they're being updated
-  if (data.cuisine_type_id) {
+  // Prepare update data
+  const updateData: any = {
+    name: data.name,
+    image_url: data.image_url,
+    quantity_in_gm: data.quantity_in_gm,
+    pieces: data.pieces,
+    price: data.price,
+    currency: data.currency,
+    is_active: data.is_active,
+  };
+
+  // Look up and update cuisine type if provided
+  if (data.cuisine_type) {
     const cuisineType = await prisma.cuisineType.findUnique({
-      where: { id: data.cuisine_type_id },
+      where: { name: data.cuisine_type },
     });
     if (!cuisineType) {
-      throw new Error("Invalid cuisine type");
+      throw new Error(`Cuisine type "${data.cuisine_type}" not found`);
     }
+    updateData.cuisine_type_id = cuisineType.id;
   }
 
-  if (data.category_id) {
+  // Look up and update category if provided
+  if (data.category) {
     const category = await prisma.category.findUnique({
-      where: { id: data.category_id },
+      where: { name: data.category },
     });
     if (!category) {
-      throw new Error("Invalid category");
+      throw new Error(`Category "${data.category}" not found`);
     }
-  }
+    updateData.category_id = category.id;
 
-  if (data.sub_category_id) {
-    const subCategory = await prisma.subCategory.findUnique({
-      where: { id: data.sub_category_id },
+    // If sub_category is also provided, look it up with the category
+    if (data.sub_category) {
+      const subCategory = await prisma.subCategory.findFirst({
+        where: {
+          name: data.sub_category,
+          category_id: category.id,
+        },
+      });
+      if (!subCategory) {
+        throw new Error(`Sub category "${data.sub_category}" not found for category "${data.category}"`);
+      }
+      updateData.sub_category_id = subCategory.id;
+    }
+  } else if (data.sub_category) {
+    // If only sub_category is provided, use existing category
+    const subCategory = await prisma.subCategory.findFirst({
+      where: {
+        name: data.sub_category,
+        category_id: existingDish.category_id,
+      },
     });
     if (!subCategory) {
-      throw new Error("Invalid sub category");
+      throw new Error(`Sub category "${data.sub_category}" not found for the dish's current category`);
     }
+    updateData.sub_category_id = subCategory.id;
   }
+
+  // Remove undefined values
+  Object.keys(updateData).forEach(key => {
+    if (updateData[key] === undefined) {
+      delete updateData[key];
+    }
+  });
 
   const dish = await prisma.dish.update({
     where: { id: dishId },
-    data,
+    data: updateData,
     include: {
       cuisine_type: true,
       category: true,

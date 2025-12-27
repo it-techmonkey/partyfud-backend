@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as packagesService from "./packages.services";
+import { uploadToCloudinary } from "../../../lib/cloudinary";
 
 /**
  * Get all packages by caterer ID
@@ -73,11 +74,27 @@ export const createPackage = async (
     const user = (req as any).user;
     const catererId = user.userId;
 
+    // Handle image upload if provided
+    let cover_image_url: string | undefined = req.body.cover_image_url; // Fallback to URL if provided
+    
+    if ((req as any).file) {
+      try {
+        cover_image_url = await uploadToCloudinary((req as any).file, 'partyfud/packages');
+      } catch (uploadError: any) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: `Image upload failed: ${uploadError.message}`,
+          },
+        });
+        return;
+      }
+    }
+
     const {
       name,
       people_count,
       package_type_id,
-      cover_image_url,
       total_price,
       currency,
       rating,
@@ -137,11 +154,27 @@ export const updatePackage = async (
     const catererId = user.userId;
     const packageId = req.params.id;
 
+    // Handle image upload if provided
+    let cover_image_url: string | undefined = req.body.cover_image_url; // Fallback to URL if provided
+    
+    if ((req as any).file) {
+      try {
+        cover_image_url = await uploadToCloudinary((req as any).file, 'partyfud/packages');
+      } catch (uploadError: any) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: `Image upload failed: ${uploadError.message}`,
+          },
+        });
+        return;
+      }
+    }
+
     const {
       name,
       people_count,
       package_type_id,
-      cover_image_url,
       total_price,
       currency,
       rating,

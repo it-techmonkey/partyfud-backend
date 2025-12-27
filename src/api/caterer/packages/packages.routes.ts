@@ -6,6 +6,7 @@ import {
   createPackage,
   updatePackage,
 } from "./packages.controller";
+import { uploadSingle } from "../../../middleware/upload";
 
 const router = Router();
 
@@ -16,8 +17,8 @@ router.use(requireRole("CATERER"));
 // Package routes
 router.get("/", getPackages);
 router.get("/:id", getPackageById);
-router.post("/", createPackage);
-router.put("/:id", updatePackage);
+router.post("/", uploadSingle, createPackage);
+router.put("/:id", uploadSingle, updatePackage);
 
 export default router;
 

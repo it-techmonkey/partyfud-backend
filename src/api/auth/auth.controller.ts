@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "./auth.services";
+import { uploadToCloudinary } from "../../lib/cloudinary";
 
 /**
  * Signup controller
@@ -84,6 +85,23 @@ export const signup = async (
       return;
     }
 
+    // Handle image upload if provided
+    let image_url: string | undefined = req.body.image_url; // Fallback to URL if provided
+    
+    if ((req as any).file) {
+      try {
+        image_url = await uploadToCloudinary((req as any).file, 'partyfud/users');
+      } catch (uploadError: any) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: `Image upload failed: ${uploadError.message}`,
+          },
+        });
+        return;
+      }
+    }
+
     const result = await authService.signup({
       first_name,
       last_name,
@@ -92,6 +110,7 @@ export const signup = async (
       password,
       company_name,
       type,
+      image_url,
     });
 
     res.status(201).json({

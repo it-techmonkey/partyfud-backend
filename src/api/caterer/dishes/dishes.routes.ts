@@ -7,6 +7,7 @@ import {
   updateDish,
   deleteDish,
 } from "./dishes.controller";
+import { uploadSingle } from "../../../middleware/upload";
 
 const router = Router();
 
@@ -17,8 +18,8 @@ router.use(requireRole("CATERER"));
 // Dish routes
 router.get("/", getDishes);
 router.get("/:id", getDishById);
-router.post("/", createDish);
-router.put("/:id", updateDish);
+router.post("/", uploadSingle, createDish);
+router.put("/:id", uploadSingle, updateDish);
 router.delete("/:id", deleteDish);
 
 export default router;
