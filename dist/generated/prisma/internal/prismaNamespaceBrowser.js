@@ -200,7 +200,9 @@ exports.PackageScalarFieldEnum = {
 exports.PackageItemScalarFieldEnum = {
     id: 'id',
     package_id: 'package_id',
+    caterer_id: 'caterer_id',
     dish_id: 'dish_id',
+    people_count: 'people_count',
     is_optional: 'is_optional',
     quantity: 'quantity',
     price_at_time: 'price_at_time',

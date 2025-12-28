@@ -1,0 +1,481 @@
+{
+	"info": {
+		"_postman_id": "packages-api-collection",
+		"name": "PartyFud Packages & Package Items API",
+		"description": "Complete API collection for Packages and Package Items management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Package Items",
+			"item": [
+				{
+					"name": "Create Package Item (Draft)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dish_id\": \"dish-uuid-here\",\n  \"people_count\": 50,\n  \"quantity\": 2,\n  \"price_at_time\": 45.00,\n  \"is_optional\": false,\n  \"is_addon\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items"]
+						}
+					}
+				},
+				{
+					"name": "Create Package Item (Linked)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dish_id\": \"dish-uuid-here\",\n  \"people_count\": 50,\n  \"quantity\": 2,\n  \"price_at_time\": 45.00,\n  \"is_optional\": false,\n  \"is_addon\": false,\n  \"package_id\": \"package-uuid-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items"]
+						}
+					}
+				},
+				{
+					"name": "Get All Package Items",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items"]
+						}
+					}
+				},
+				{
+					"name": "Get Package Items by Package ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items?package_id=package-uuid-here",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items"],
+							"query": [
+								{
+									"key": "package_id",
+									"value": "package-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Package Item by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items/:item_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items", ":item_id"],
+							"variable": [
+								{
+									"key": "item_id",
+									"value": "item-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Package Item",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"people_count\": 100,\n  \"quantity\": 3,\n  \"price_at_time\": 50.00,\n  \"is_optional\": true,\n  \"is_addon\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items/:item_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items", ":item_id"],
+							"variable": [
+								{
+									"key": "item_id",
+									"value": "item-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Package Item",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items/:item_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items", ":item_id"],
+							"variable": [
+								{
+									"key": "item_id",
+									"value": "item-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Packages",
+			"item": [
+				{
+					"name": "Get All Packages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						}
+					}
+				},
+				{
+					"name": "Get Package by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:package_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":package_id"],
+							"variable": [
+								{
+									"key": "package_id",
+									"value": "package-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Package (JSON)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Wedding Package\",\n  \"people_count\": 100,\n  \"package_type_id\": \"package-type-uuid-here\",\n  \"total_price\": 5000.00,\n  \"currency\": \"AED\",\n  \"rating\": 4.5,\n  \"is_active\": true,\n  \"is_available\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						}
+					}
+				},
+				{
+					"name": "Create Package (with Items)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Wedding Package\",\n  \"people_count\": 100,\n  \"package_type_id\": \"package-type-uuid-here\",\n  \"total_price\": 5000.00,\n  \"currency\": \"AED\",\n  \"rating\": 4.5,\n  \"is_active\": true,\n  \"is_available\": true,\n  \"package_item_ids\": [\"item-uuid-1\", \"item-uuid-2\", \"item-uuid-3\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						}
+					}
+				},
+				{
+					"name": "Create Package (with Image Upload)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Wedding Package",
+									"type": "text"
+								},
+								{
+									"key": "people_count",
+									"value": "100",
+									"type": "text"
+								},
+								{
+									"key": "package_type_id",
+									"value": "package-type-uuid-here",
+									"type": "text"
+								},
+								{
+									"key": "total_price",
+									"value": "5000.00",
+									"type": "text"
+								},
+								{
+									"key": "currency",
+									"value": "AED",
+									"type": "text"
+								},
+								{
+									"key": "rating",
+									"value": "4.5",
+									"type": "text"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "is_available",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						}
+					}
+				},
+				{
+					"name": "Create Package (with Image and Items)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Wedding Package",
+									"type": "text"
+								},
+								{
+									"key": "people_count",
+									"value": "100",
+									"type": "text"
+								},
+								{
+									"key": "package_type_id",
+									"value": "package-type-uuid-here",
+									"type": "text"
+								},
+								{
+									"key": "total_price",
+									"value": "5000.00",
+									"type": "text"
+								},
+								{
+									"key": "currency",
+									"value": "AED",
+									"type": "text"
+								},
+								{
+									"key": "rating",
+									"value": "4.5",
+									"type": "text"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "is_available",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "package_item_ids",
+									"value": "item-uuid-1,item-uuid-2,item-uuid-3",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						}
+					}
+				},
+				{
+					"name": "Update Package",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Wedding Package Updated\",\n  \"people_count\": 150,\n  \"total_price\": 6000.00,\n  \"is_active\": true,\n  \"is_available\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:package_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":package_id"],
+							"variable": [
+								{
+									"key": "package_id",
+									"value": "package-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Package (with Image)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Wedding Package Updated",
+									"type": "text"
+								},
+								{
+									"key": "people_count",
+									"value": "150",
+									"type": "text"
+								},
+								{
+									"key": "total_price",
+									"value": "6000.00",
+									"type": "text"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:package_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":package_id"],
+							"variable": [
+								{
+									"key": "package_id",
+									"value": "package-uuid-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Link Items to Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"item_ids\": [\"item-uuid-1\", \"item-uuid-2\", \"item-uuid-3\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:package_id/items/link",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":package_id", "items", "link"],
+							"variable": [
+								{
+									"key": "package_id",
+									"value": "package-uuid-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}
+

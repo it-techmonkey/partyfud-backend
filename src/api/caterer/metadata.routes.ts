@@ -5,6 +5,7 @@ import {
   getCategories,
   getSubCategories,
   getFreeForms,
+  getPackageTypes,
 } from "./metadata.controller";
 
 const router = Router();
@@ -18,6 +19,7 @@ router.get("/cuisine-types", getCuisineTypes);
 router.get("/categories", getCategories);
 router.get("/subcategories", getSubCategories);
 router.get("/freeforms", getFreeForms);
+router.get("/package-types", getPackageTypes);
 
 export default router;
 

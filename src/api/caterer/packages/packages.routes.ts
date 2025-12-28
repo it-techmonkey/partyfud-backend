@@ -6,6 +6,7 @@ import {
   createPackage,
   updatePackage,
 } from "./packages.controller";
+import { linkPackageItemsToPackage } from "../package-items/package-items.controller";
 import { uploadSingle } from "../../../middleware/upload";
 
 const router = Router();
@@ -16,8 +17,10 @@ router.use(requireRole("CATERER"));
 
 // Package routes
 router.get("/", getPackages);
-router.get("/:id", getPackageById);
 router.post("/", uploadSingle, createPackage);
+// Link route must come before /:id to avoid route conflicts
+router.post("/:id/items/link", linkPackageItemsToPackage);
+router.get("/:id", getPackageById);
 router.put("/:id", uploadSingle, updatePackage);
 
 export default router;

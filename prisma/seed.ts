@@ -675,13 +675,13 @@ async function main() {
   // Add dishes to wedding package
   await prisma.packageItem.createMany({
     data: [
-      { package_id: weddingPackage.id, dish_id: hummus.id, quantity: 10, is_optional: false, price_at_time: 18.00 },
-      { package_id: weddingPackage.id, dish_id: fattoush.id, quantity: 8, is_optional: false, price_at_time: 22.00 },
-      { package_id: weddingPackage.id, dish_id: shawarma.id, quantity: 50, is_optional: false, price_at_time: 32.00 },
-      { package_id: weddingPackage.id, dish_id: butterChicken.id, quantity: 30, is_optional: false, price_at_time: 45.00 },
-      { package_id: weddingPackage.id, dish_id: chickenBiryani.id, quantity: 25, is_optional: false, price_at_time: 38.00 },
-      { package_id: weddingPackage.id, dish_id: baklava.id, quantity: 15, is_optional: false, price_at_time: 20.00 },
-      { package_id: weddingPackage.id, dish_id: chocolateCake.id, quantity: 5, is_optional: false, price_at_time: 35.00 },
+      { package_id: weddingPackage.id, dish_id: hummus.id, people_count: 100, quantity: 10, is_optional: false, price_at_time: 18.00 },
+      { package_id: weddingPackage.id, dish_id: fattoush.id, people_count: 100, quantity: 8, is_optional: false, price_at_time: 22.00 },
+      { package_id: weddingPackage.id, dish_id: shawarma.id, people_count: 100, quantity: 50, is_optional: false, price_at_time: 32.00 },
+      { package_id: weddingPackage.id, dish_id: butterChicken.id, people_count: 100, quantity: 30, is_optional: false, price_at_time: 45.00 },
+      { package_id: weddingPackage.id, dish_id: chickenBiryani.id, people_count: 100, quantity: 25, is_optional: false, price_at_time: 38.00 },
+      { package_id: weddingPackage.id, dish_id: baklava.id, people_count: 100, quantity: 15, is_optional: false, price_at_time: 20.00 },
+      { package_id: weddingPackage.id, dish_id: chocolateCake.id, people_count: 100, quantity: 5, is_optional: false, price_at_time: 35.00 },
     ],
   });
 
@@ -709,10 +709,10 @@ async function main() {
 
   await prisma.packageItem.createMany({
     data: [
-      { package_id: corporatePackage.id, dish_id: caesarSalad.id, quantity: 20, is_optional: false, price_at_time: 28.00 },
-      { package_id: corporatePackage.id, dish_id: grilledChicken.id, quantity: 30, is_optional: false, price_at_time: 42.00 },
-      { package_id: corporatePackage.id, dish_id: greekSalad.id, quantity: 15, is_optional: true, price_at_time: 26.00 },
-      { package_id: corporatePackage.id, dish_id: tiramisu.id, quantity: 25, is_optional: false, price_at_time: 28.00 },
+      { package_id: corporatePackage.id, dish_id: caesarSalad.id, people_count: 50, quantity: 20, is_optional: false, price_at_time: 28.00 },
+      { package_id: corporatePackage.id, dish_id: grilledChicken.id, people_count: 50, quantity: 30, is_optional: false, price_at_time: 42.00 },
+      { package_id: corporatePackage.id, dish_id: greekSalad.id, people_count: 50, quantity: 15, is_optional: true, price_at_time: 26.00 },
+      { package_id: corporatePackage.id, dish_id: tiramisu.id, people_count: 50, quantity: 25, is_optional: false, price_at_time: 28.00 },
     ],
   });
 
@@ -739,10 +739,10 @@ async function main() {
 
   await prisma.packageItem.createMany({
     data: [
-      { package_id: birthdayPackage.id, dish_id: springRolls.id, quantity: 8, is_optional: false, price_at_time: 16.00 },
-      { package_id: birthdayPackage.id, dish_id: friedRice.id, quantity: 15, is_optional: false, price_at_time: 30.00 },
-      { package_id: birthdayPackage.id, dish_id: chocolateCake.id, quantity: 3, is_optional: false, price_at_time: 35.00 },
-      { package_id: birthdayPackage.id, dish_id: samosa.id, quantity: 10, is_optional: true, price_at_time: 12.00 },
+      { package_id: birthdayPackage.id, dish_id: springRolls.id, people_count: 30, quantity: 8, is_optional: false, price_at_time: 16.00 },
+      { package_id: birthdayPackage.id, dish_id: friedRice.id, people_count: 30, quantity: 15, is_optional: false, price_at_time: 30.00 },
+      { package_id: birthdayPackage.id, dish_id: chocolateCake.id, people_count: 30, quantity: 3, is_optional: false, price_at_time: 35.00 },
+      { package_id: birthdayPackage.id, dish_id: samosa.id, people_count: 30, quantity: 10, is_optional: true, price_at_time: 12.00 },
     ],
   });
 
@@ -786,9 +786,9 @@ async function main() {
 
   await prisma.packageItem.createMany({
     data: [
-      { package_id: afternoonTeaPackage.id, dish_id: bruschetta.id, quantity: 10, is_optional: false, price_at_time: 24.00 },
-      { package_id: afternoonTeaPackage.id, dish_id: baklava.id, quantity: 8, is_optional: false, price_at_time: 20.00 },
-      { package_id: afternoonTeaPackage.id, dish_id: tiramisu.id, quantity: 12, is_optional: false, price_at_time: 28.00 },
+      { package_id: afternoonTeaPackage.id, dish_id: bruschetta.id, people_count: 20, quantity: 10, is_optional: false, price_at_time: 24.00 },
+      { package_id: afternoonTeaPackage.id, dish_id: baklava.id, people_count: 20, quantity: 8, is_optional: false, price_at_time: 20.00 },
+      { package_id: afternoonTeaPackage.id, dish_id: tiramisu.id, people_count: 20, quantity: 12, is_optional: false, price_at_time: 28.00 },
     ],
   });
 

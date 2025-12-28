@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  first_name   String
-  last_name    String
-  phone        String
-  email        String    @unique
-  password     String
-  company_name String?
-  image_url    String?
-  type         UserType  @default(USER)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  packages     Package[]
-  dishes       Dish[]
+  id            String        @id @default(uuid())
+  first_name    String
+  last_name     String
+  phone         String
+  email         String        @unique
+  password      String
+  company_name  String?
+  image_url     String?
+  type          UserType      @default(USER)
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  packages      Package[]
+  dishes        Dish[]
+  package_items PackageItem[]
 }
 
 model CuisineType {
@@ -167,16 +168,19 @@ model Package {
 
 model PackageItem {
   id            String   @id @default(uuid())
-  package_id    String
+  package_id    String? // Made nullable so items can exist without a package
+  caterer_id    String?
   dish_id       String
+  people_count  Int
   is_optional   Boolean  @default(false)
   quantity      Int      @default(1)
   price_at_time Decimal? @db.Decimal(10, 2)
   is_addon      Boolean  @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
+  caterer       User?    @relation(fields: [caterer_id], references: [id], onDelete: Cascade)
   dish          Dish     @relation(fields: [dish_id], references: [id])
-  package       Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
+  package       Package? @relation(fields: [package_id], references: [id], onDelete: Cascade)
 
   @@index([package_id])
   @@index([dish_id])

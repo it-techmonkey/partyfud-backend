@@ -10,6 +10,7 @@ export interface CreatePackageData {
   rating?: number;
   is_active?: boolean;
   is_available?: boolean;
+  package_item_ids?: string[]; // Array of package item IDs to link to this package
 }
 
 export interface UpdatePackageData {
@@ -129,9 +130,13 @@ export const createPackage = async (
     throw new Error("Invalid package type");
   }
 
+  // Extract package_item_ids before creating package (it's not a Package field)
+  const { package_item_ids, ...packageDataWithoutItems } = data;
+
+  // Create the package
   const packageData = await prisma.package.create({
     data: {
-      ...data,
+      ...packageDataWithoutItems,
       caterer_id: catererId,
       currency: data.currency || "AED",
       is_active: data.is_active ?? true,
@@ -144,6 +149,64 @@ export const createPackage = async (
       occasions: true,
     },
   });
+
+  // Link package items if provided
+  if (package_item_ids && package_item_ids.length > 0) {
+    // Verify all items belong to caterer
+    const items = await prisma.packageItem.findMany({
+      where: {
+        id: { in: package_item_ids },
+        dish: {
+          caterer_id: catererId,
+        },
+      },
+    });
+
+    if (items.length !== package_item_ids.length) {
+      throw new Error("Some package items not found or do not belong to this caterer");
+    }
+
+    // Link items to the package
+    await prisma.packageItem.updateMany({
+      where: {
+        id: { in: package_item_ids },
+      },
+      data: {
+        package_id: packageData.id,
+      },
+    });
+
+    // Fetch updated package with linked items
+    const updatedPackage = await prisma.package.findUnique({
+      where: { id: packageData.id },
+      include: {
+        package_type: true,
+        items: {
+          include: {
+            dish: {
+              include: {
+                cuisine_type: true,
+                category: true,
+                sub_category: true,
+              },
+            },
+          },
+        },
+        category_selections: {
+          include: {
+            category: true,
+          },
+        },
+        occasions: {
+          include: {
+            occassion: true,
+          },
+        },
+      },
+    });
+
+    return updatedPackage!;
+  }
 
   return packageData;
 };

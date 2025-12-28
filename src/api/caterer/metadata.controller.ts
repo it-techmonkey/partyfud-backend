@@ -129,3 +129,33 @@ export const getFreeForms = async (
   }
 };
 
+/**
+ * Get all package types
+ * GET /api/caterer/metadata/package-types
+ */
+export const getPackageTypes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const packageTypes = await prisma.packageType.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: packageTypes,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.message || "An error occurred",
+      },
+    });
+  }
+};
+

@@ -40,10 +40,18 @@ export const getPackageById = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  console.log("🔴 [GET PACKAGE BY ID] API hit - This should NOT be called for /packages/items");
+  console.log("🔴 [GET PACKAGE BY ID] Request URL:", req.url);
+  console.log("🔴 [GET PACKAGE BY ID] Request path:", req.path);
+  console.log("🔴 [GET PACKAGE BY ID] Params:", req.params);
+  
   try {
     const user = (req as any).user;
     const catererId = user.userId;
     const packageId = req.params.id;
+
+    console.log("🔴 [GET PACKAGE BY ID] packageId from params:", packageId);
+    console.log("🔴 [GET PACKAGE BY ID] catererId:", catererId);
 
     const packageData = await packagesService.getPackageById(packageId, catererId);
 
@@ -100,10 +108,47 @@ export const createPackage = async (
       rating,
       is_active,
       is_available,
+      package_item_ids, // Array of package item IDs to link
     } = req.body;
 
+    // Convert FormData string values to proper types
+    const parsedPeopleCount = typeof people_count === 'string' 
+      ? parseInt(people_count, 10) 
+      : (typeof people_count === 'number' ? people_count : 0);
+
+    const parsedTotalPrice = typeof total_price === 'string' 
+      ? parseFloat(total_price) 
+      : (typeof total_price === 'number' ? total_price : 0);
+
+    const parsedRating = rating !== undefined
+      ? (typeof rating === 'string' ? parseFloat(rating) : rating)
+      : undefined;
+
+    const parsedIsActive = is_active !== undefined
+      ? (typeof is_active === 'string'
+          ? is_active === 'true' || is_active === '1'
+          : is_active)
+      : undefined;
+
+    const parsedIsAvailable = is_available !== undefined
+      ? (typeof is_available === 'string'
+          ? is_available === 'true' || is_available === '1'
+          : is_available)
+      : undefined;
+
+    // Parse package_item_ids (can be string or array from FormData)
+    let parsedPackageItemIds: string[] | undefined;
+    if (package_item_ids) {
+      if (Array.isArray(package_item_ids)) {
+        parsedPackageItemIds = package_item_ids.filter(id => id && typeof id === 'string');
+      } else if (typeof package_item_ids === 'string') {
+        // Handle comma-separated string
+        parsedPackageItemIds = package_item_ids.split(',').map(id => id.trim()).filter(id => id);
+      }
+    }
+
     // Validate required fields
-    if (!name || !people_count || !package_type_id || !total_price) {
+    if (!name || !parsedPeopleCount || !package_type_id || !parsedTotalPrice) {
       res.status(400).json({
         success: false,
         error: {
@@ -116,14 +161,15 @@ export const createPackage = async (
 
     const packageData = await packagesService.createPackage(catererId, {
       name,
-      people_count,
+      people_count: parsedPeopleCount,
       package_type_id,
       cover_image_url,
-      total_price,
+      total_price: parsedTotalPrice,
       currency,
-      rating,
-      is_active,
-      is_available,
+      rating: parsedRating,
+      is_active: parsedIsActive,
+      is_available: parsedIsAvailable,
+      package_item_ids: parsedPackageItemIds, // Pass item IDs to link
     });
 
     res.status(201).json({

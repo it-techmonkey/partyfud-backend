@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCurrentUser = exports.logout = exports.login = exports.signup = void 0;
 const authService = __importStar(require("./auth.services"));
+const cloudinary_1 = require("../../lib/cloudinary");
 /**
  * Signup controller
  * POST /api/auth/signup
@@ -98,6 +99,22 @@ const signup = async (req, res, next) => {
             });
             return;
         }
+        // Handle image upload if provided
+        let image_url = req.body.image_url; // Fallback to URL if provided
+        if (req.file) {
+            try {
+                image_url = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'partyfud/users');
+            }
+            catch (uploadError) {
+                res.status(400).json({
+                    success: false,
+                    error: {
+                        message: `Image upload failed: ${uploadError.message}`,
+                    },
+                });
+                return;
+            }
+        }
         const result = await authService.signup({
             first_name,
             last_name,
@@ -106,6 +123,7 @@ const signup = async (req, res, next) => {
             password,
             company_name,
             type,
+            image_url,
         });
         res.status(201).json({
             success: true,
