@@ -149,11 +149,11 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
   });
 
     console.log("🟢 [SERVICE] Found", packageItems.length, "package items");
-    console.log("🟢 [SERVICE] Package items IDs:", packageItems.map(item => item.id));
+    console.log("🟢 [SERVICE] Package items IDs:", packageItems.map((item: any) => item.id));
     
     // Now manually fetch packages for items that have package_id, but only if they belong to this caterer
     const itemsWithPackages = await Promise.all(
-      packageItems.map(async (item) => {
+      packageItems.map(async (item: any) => {
         console.log(`🟢 [SERVICE] Processing item ${item.id}: package_id=${item.package_id}`);
         
         if (item.package_id) {

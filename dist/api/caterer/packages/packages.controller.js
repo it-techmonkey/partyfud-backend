@@ -65,10 +65,16 @@ exports.getPackages = getPackages;
  * GET /api/caterer/packages/:id
  */
 const getPackageById = async (req, res, next) => {
+    console.log("🔴 [GET PACKAGE BY ID] API hit - This should NOT be called for /packages/items");
+    console.log("🔴 [GET PACKAGE BY ID] Request URL:", req.url);
+    console.log("🔴 [GET PACKAGE BY ID] Request path:", req.path);
+    console.log("🔴 [GET PACKAGE BY ID] Params:", req.params);
     try {
         const user = req.user;
         const catererId = user.userId;
         const packageId = req.params.id;
+        console.log("🔴 [GET PACKAGE BY ID] packageId from params:", packageId);
+        console.log("🔴 [GET PACKAGE BY ID] catererId:", catererId);
         const packageData = await packagesService.getPackageById(packageId, catererId);
         res.status(200).json({
             success: true,

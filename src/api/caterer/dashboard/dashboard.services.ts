@@ -100,7 +100,7 @@ export const getDashboardStats = async (catererId: string): Promise<DashboardSta
     },
   });
 
-  const totalRevenuePotential = packagesWithPrice.reduce((sum, pkg) => {
+  const totalRevenuePotential = packagesWithPrice.reduce((sum: number, pkg: { total_price: any; currency: string }) => {
     return sum + Number(pkg.total_price);
   }, 0);
 
@@ -167,11 +167,11 @@ export const getDashboardStats = async (catererId: string): Promise<DashboardSta
       currency,
     },
     recent: {
-      dishes: recentDishes.map((dish) => ({
+      dishes: recentDishes.map((dish: { id: string; name: string; image_url: string | null; price: any; currency: string; is_active: boolean; created_at: Date }) => ({
         ...dish,
         price: Number(dish.price),
       })),
-      packages: recentPackages.map((pkg) => ({
+      packages: recentPackages.map((pkg: { id: string; name: string; cover_image_url: string | null; total_price: any; currency: string; people_count: number; is_available: boolean; created_at: Date }) => ({
         ...pkg,
         total_price: Number(pkg.total_price),
       })),
