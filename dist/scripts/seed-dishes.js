@@ -129,9 +129,9 @@ async function main() {
     }
     console.log(`   Found ${cuisineTypes.length} cuisine types, ${categories.length} categories, ${subCategories.length} subcategories`);
     // Create a map for quick lookup
-    const cuisineMap = new Map(cuisineTypes.map(ct => [ct.name.toLowerCase(), ct.id]));
-    const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
-    const subCategoryMap = new Map(subCategories.map(sc => [sc.name.toLowerCase(), sc.id]));
+    const cuisineMap = new Map(cuisineTypes.map((ct) => [ct.name.toLowerCase(), ct.id]));
+    const categoryMap = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
+    const subCategoryMap = new Map(subCategories.map((sc) => [sc.name.toLowerCase(), sc.id]));
     // Create dishes
     console.log("🍽️  Creating dishes...");
     const createdDishes = [];
