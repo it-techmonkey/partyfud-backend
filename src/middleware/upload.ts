@@ -26,49 +26,54 @@ export const handleMulterError = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: {
           message: 'File too large. Maximum file size is 10MB.',
         },
       });
+      return;
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: {
           message: 'Too many files uploaded.',
         },
       });
+      return;
     }
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: {
         message: `Upload error: ${err.message}`,
       },
     });
+    return;
   }
   if (err) {
     // Handle other errors (like fileFilter errors)
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: {
         message: err.message || 'File upload error',
       },
     });
+    return;
   }
   next();
 };
 
 // Single file upload middleware with error handling
-export const uploadSingle = (req: Request, res: Response, next: NextFunction) => {
+export const uploadSingle = (req: Request, res: Response, next: NextFunction): void => {
   const uploadMiddleware = upload.single('image');
   uploadMiddleware(req, res, (err) => {
     if (err) {
-      return handleMulterError(err, req, res, next);
+      handleMulterError(err, req, res, next);
+      return;
     }
     next();
   });
