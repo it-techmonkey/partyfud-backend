@@ -95,6 +95,81 @@ export const uploadToCloudinary = async (
 };
 
 /**
+ * Upload any file (image, PDF, document, etc.) to Cloudinary
+ * Automatically detects file type and uses appropriate resource_type
+ * @param file - Multer file object
+ * @param folder - Cloudinary folder path (optional)
+ * @returns Promise<string> - Secure URL of uploaded file
+ */
+export const uploadFileToCloudinary = async (
+  file: Express.Multer.File,
+  folder: string = 'partyfud'
+): Promise<string> => {
+  // Check if Cloudinary is configured
+  if (!cloud_name || !api_key || !api_secret) {
+    throw new Error('Cloudinary is not configured. Please check your environment variables.');
+  }
+
+  // Determine resource type based on file MIME type
+  let resourceType: 'image' | 'raw' | 'auto' = 'auto';
+  let uploadOptions: any = {
+    folder: folder,
+  };
+
+  if (file.mimetype.startsWith('image/')) {
+    resourceType = 'image';
+    uploadOptions.resource_type = 'image';
+    uploadOptions.transformation = [
+      { width: 800, height: 600, crop: 'limit' },
+      { quality: 'auto' },
+    ];
+  } else {
+    // For PDFs and other documents, use 'raw' resource type
+    resourceType = 'raw';
+    uploadOptions.resource_type = 'raw';
+  }
+
+  console.log(`[Cloudinary] Uploading ${file.mimetype} as ${resourceType} to folder: ${folder}`);
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      uploadOptions,
+      (error, result) => {
+        if (error) {
+          console.error('[Cloudinary] Upload error:', error);
+          console.error('[Cloudinary] Error details:', {
+            message: error.message,
+            http_code: (error as any).http_code,
+            name: error.name,
+          });
+          
+          // Provide more helpful error messages
+          if (error.message?.includes('Invalid cloud_name') || (error as any).http_code === 401) {
+            reject(new Error(`Invalid Cloudinary cloud_name "${cloud_name}". Please verify:
+1. The cloud_name in your .env file matches your Cloudinary dashboard URL
+2. Your dashboard URL looks like: https://console.cloudinary.com/console/c/[cloud_name]/...
+3. The cloud_name is the part after "/c/" in the URL
+4. There are no quotes or extra spaces around the value in .env`));
+          } else if (error.message?.includes('Invalid API Key') || (error as any).http_code === 401) {
+            reject(new Error(`Invalid Cloudinary API credentials. Please verify:
+1. Your CLOUDINARY_API_KEY is correct
+2. Your CLOUDINARY_API_SECRET is correct
+3. The API key is active in your Cloudinary dashboard`));
+          } else {
+            reject(new Error(`Cloudinary upload failed: ${error.message || 'Unknown error'}. HTTP Code: ${(error as any).http_code || 'N/A'}`));
+          }
+        } else {
+          console.log(`[Cloudinary] Upload successful: ${result!.secure_url}`);
+          resolve(result!.secure_url);
+        }
+      }
+    );
+    
+    uploadStream.end(file.buffer);
+  });
+};
+
+/**
  * Delete image from Cloudinary
  * @param imageUrl - Full URL of the image to delete
  * @returns Promise<void>

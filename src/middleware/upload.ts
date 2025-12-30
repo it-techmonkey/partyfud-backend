@@ -11,11 +11,26 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit (increased from 5MB)
   },
   fileFilter: (req, file, cb) => {
-    // Check if file is an image
-    if (file.mimetype.startsWith('image/')) {
+    // Allow images, PDFs, and common document types
+    const allowedMimeTypes = [
+      'image/',           // All image types (jpg, png, gif, webp, etc.)
+      'application/pdf',  // PDF files
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'text/plain',      // .txt
+      'text/csv',        // .csv
+    ];
+    
+    const isAllowed = allowedMimeTypes.some(type => 
+      file.mimetype.startsWith(type) || file.mimetype === type
+    );
+    
+    if (isAllowed) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error(`File type not allowed. Allowed types: images, PDF, Word, Excel, text files`));
     }
   },
 });
@@ -81,4 +96,20 @@ export const uploadSingle = (req: Request, res: Response, next: NextFunction): v
 
 // Multiple files upload middleware (for future use)
 export const uploadMultiple = upload.array('images', 10);
+
+// Multiple fields with multiple files middleware
+// Handles food_license and Registration fields, each can have multiple files
+export const uploadCatererDocuments = (req: Request, res: Response, next: NextFunction): void => {
+  const uploadMiddleware = upload.fields([
+    { name: 'food_license', maxCount: 10 },
+    { name: 'Registration', maxCount: 10 },
+  ]);
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      handleMulterError(err, req, res, next);
+      return;
+    }
+    next();
+  });
+};
 

@@ -159,3 +159,87 @@ export const getUserById = async (userId: string) => {
   return user;
 };
 
+export interface CatererInfoData {
+  business_name: string;
+  business_type: string;
+  business_description?: string;
+  service_area?: string;
+  minimum_guests?: number;
+  maximum_guests?: number;
+  cuisine_types: string[];
+  region?: string;
+  delivery_only?: boolean;
+  delivery_plus_setup?: boolean;
+  full_service?: boolean;
+  staff?: number;
+  servers?: number;
+  food_license?: string[];
+  Registration?: string[];
+  caterer_id: string;
+}
+
+/**
+ * Create or update caterer info
+ */
+export const createCatererInfo = async (data: CatererInfoData) => {
+  // Check if user exists and is a caterer
+  const user = await prisma.user.findUnique({
+    where: { id: data.caterer_id },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.type !== "CATERER") {
+    throw new Error("Only caterers can create caterer info");
+  }
+
+  // Check if caterer info already exists
+  const existingCatererInfo = await prisma.catererinfo.findUnique({
+    where: { caterer_id: data.caterer_id },
+  });
+
+  if (existingCatererInfo) {
+    throw new Error("Caterer info already exists. Use update endpoint instead.");
+  }
+
+  // Create caterer info
+  const catererInfo = await prisma.catererinfo.create({
+    data: {
+      business_name: data.business_name,
+      business_type: data.business_type,
+      business_description: data.business_description,
+      service_area: data.service_area,
+      minimum_guests: data.minimum_guests,
+      maximum_guests: data.maximum_guests,
+      cuisine_types: data.cuisine_types,
+      region: data.region,
+      delivery_only: data.delivery_only ?? true,
+      delivery_plus_setup: data.delivery_plus_setup ?? true,
+      full_service: data.full_service ?? true,
+      staff: data.staff,
+      servers: data.servers,
+      food_license: (data.food_license || []) as any,
+      Registration: (data.Registration || []) as any,
+      caterer_id: data.caterer_id,
+    } as any,
+    include: {
+      caterer: {
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          email: true,
+          phone: true,
+          company_name: true,
+          image_url: true,
+          type: true,
+        },
+      },
+    },
+  });
+
+  return catererInfo;
+};
+

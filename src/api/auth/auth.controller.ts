@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "./auth.services";
-import { uploadToCloudinary } from "../../lib/cloudinary";
+import { uploadToCloudinary, uploadFileToCloudinary } from "../../lib/cloudinary";
 
 /**
  * Signup controller
@@ -237,6 +237,215 @@ export const getCurrentUser = async (
   } catch (error: any) {
     if (error.message === "User not found") {
       res.status(404).json({
+        success: false,
+        error: {
+          message: error.message,
+        },
+      });
+    } else {
+      next(error);
+    }
+  }
+};
+
+/**
+ * Create caterer info controller
+ * POST /api/auth/caterer-info
+ * Requires authentication - used after caterer signup
+ */
+export const catererInfo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Get user from authenticated request
+    const userId = (req as any).user?.userId;
+    const userType = (req as any).user?.type;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        error: {
+          message: "Unauthorized. Please authenticate first.",
+        },
+      });
+      return;
+    }
+
+    // Verify user is a caterer
+    if (userType !== "CATERER") {
+      res.status(403).json({
+        success: false,
+        error: {
+          message: "Only caterers can create caterer info",
+        },
+      });
+      return;
+    }
+
+    const {
+      business_name,
+      business_type,
+      business_description,
+      service_area,
+      minimum_guests,
+      maximum_guests,
+      cuisine_types,
+      region,
+      delivery_only,
+      delivery_plus_setup,
+      full_service,
+      staff,
+      servers,
+    } = req.body;
+
+    // Handle file uploads for food_license and Registration
+    const foodLicenseUrls: string[] = [];
+    const registrationUrls: string[] = [];
+
+    const files = (req as any).files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+    // Upload food_license files if any
+    if (files?.food_license && Array.isArray(files.food_license)) {
+      try {
+        for (const file of files.food_license) {
+          const url = await uploadFileToCloudinary(file, 'partyfud/caterer-documents/food-license');
+          foodLicenseUrls.push(url);
+        }
+      } catch (uploadError: any) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: `Food license file upload failed: ${uploadError.message}`,
+          },
+        });
+        return;
+      }
+    }
+
+    // Upload Registration files if any
+    if (files?.Registration && Array.isArray(files.Registration)) {
+      try {
+        for (const file of files.Registration) {
+          const url = await uploadFileToCloudinary(file, 'partyfud/caterer-documents/registration');
+          registrationUrls.push(url);
+        }
+      } catch (uploadError: any) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: `Registration file upload failed: ${uploadError.message}`,
+          },
+        });
+        return;
+      }
+    }
+
+    // Validate required fields
+    if (!business_name || !business_type) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "business_name and business_type are required",
+        },
+      });
+      return;
+    }
+
+    // Validate cuisine_types is an array
+    if (!Array.isArray(cuisine_types)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "cuisine_types must be an array",
+        },
+      });
+      return;
+    }
+
+    // Validate numeric fields if provided
+    if (minimum_guests !== undefined && (isNaN(Number(minimum_guests)) || Number(minimum_guests) < 0)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "minimum_guests must be a positive number",
+        },
+      });
+      return;
+    }
+
+    if (maximum_guests !== undefined && (isNaN(Number(maximum_guests)) || Number(maximum_guests) < 0)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "maximum_guests must be a positive number",
+        },
+      });
+      return;
+    }
+
+    if (minimum_guests && maximum_guests && Number(minimum_guests) > Number(maximum_guests)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "minimum_guests cannot be greater than maximum_guests",
+        },
+      });
+      return;
+    }
+
+    if (staff !== undefined && (isNaN(Number(staff)) || Number(staff) < 0)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "staff must be a positive number",
+        },
+      });
+      return;
+    }
+
+    if (servers !== undefined && (isNaN(Number(servers)) || Number(servers) < 0)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "servers must be a positive number",
+        },
+      });
+      return;
+    }
+
+    const result = await authService.createCatererInfo({
+      business_name,
+      business_type,
+      business_description,
+      service_area,
+      minimum_guests: minimum_guests ? Number(minimum_guests) : undefined,
+      maximum_guests: maximum_guests ? Number(maximum_guests) : undefined,
+      cuisine_types,
+      region,
+      delivery_only: delivery_only !== undefined ? delivery_only === true || delivery_only === "true" : undefined,
+      delivery_plus_setup: delivery_plus_setup !== undefined ? delivery_plus_setup === "true" || delivery_plus_setup === true : undefined,
+      full_service: full_service !== undefined ? full_service === true || full_service === "true" : undefined,
+      staff: staff ? Number(staff) : undefined,
+      servers: servers ? Number(servers) : undefined,
+      food_license: foodLicenseUrls,
+      Registration: registrationUrls,
+      caterer_id: userId,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: "Caterer info created successfully",
+    });
+  } catch (error: any) {
+    if (
+      error.message === "User not found" ||
+      error.message === "Only caterers can create caterer info" ||
+      error.message === "Caterer info already exists. Use update endpoint instead."
+    ) {
+      res.status(400).json({
         success: false,
         error: {
           message: error.message,

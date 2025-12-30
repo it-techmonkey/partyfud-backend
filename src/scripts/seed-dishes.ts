@@ -22,7 +22,7 @@ const prisma = new PrismaClient({
 // ============================================
 // CONFIGURATION - Replace this with your caterer ID
 // ============================================
-const CATERER_ID = process.env.CATERER_ID || "d2657989-a73f-4df2-9386-b4162fef00f6";
+const CATERER_ID = process.env.CATERER_ID || "88cfa4ec-853e-4247-9a8a-cf7a5ffa3ab1";
 
 // Unsplash food image URLs - High quality food images (30 unique images)
 const FOOD_IMAGES = [
