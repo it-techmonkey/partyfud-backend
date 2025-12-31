@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "./auth.services";
 import { uploadToCloudinary, uploadFileToCloudinary } from "../../lib/cloudinary";
+import prisma from "../../lib/prisma";
 
 /**
  * Signup controller
@@ -249,36 +250,63 @@ export const getCurrentUser = async (
 };
 
 /**
- * Create caterer info controller
+ * Create caterer info
  * POST /api/auth/caterer-info
- * Requires authentication - used after caterer signup
+ * Requires authentication middleware
+ * Returns error if caterer info already exists
  */
-export const catererInfo = async (
+export const createCatererInfo = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  console.log('🔵 [CREATE CATERER INFO] Request received');
+  console.log('🔵 [CREATE CATERER INFO] Method:', req.method);
+  console.log('🔵 [CREATE CATERER INFO] Headers:', JSON.stringify(req.headers, null, 2));
+  
   try {
-    // Get user from authenticated request
-    const userId = (req as any).user?.userId;
-    const userType = (req as any).user?.type;
+    // Get caterer_id from decoded token
+    const catererId = (req as any).user?.userId;
+    console.log('🔵 [CREATE CATERER INFO] Caterer ID from token:', catererId);
 
-    if (!userId) {
+    if (!catererId) {
+      console.log('❌ [CREATE CATERER INFO] No caterer ID found - Unauthorized');
       res.status(401).json({
         success: false,
         error: {
-          message: "Unauthorized. Please authenticate first.",
+          message: "Unauthorized",
         },
       });
       return;
     }
 
     // Verify user is a caterer
-    if (userType !== "CATERER") {
+    console.log('🔵 [CREATE CATERER INFO] Fetching user by ID...');
+    const user = await authService.getUserById(catererId);
+    console.log('🔵 [CREATE CATERER INFO] User type:', user.type);
+    
+    if (user.type !== "CATERER") {
+      console.log('❌ [CREATE CATERER INFO] User is not a caterer - Forbidden');
       res.status(403).json({
         success: false,
         error: {
           message: "Only caterers can create caterer info",
+        },
+      });
+      return;
+    }
+
+    // Check if caterer info already exists
+    console.log('🔵 [CREATE CATERER INFO] Checking if caterer info already exists...');
+    const existingCatererInfo = await authService.getCatererInfo(catererId);
+    console.log('🔵 [CREATE CATERER INFO] Existing caterer info:', existingCatererInfo ? 'Found' : 'Not found');
+    
+    if (existingCatererInfo) {
+      console.log('⚠️ [CREATE CATERER INFO] Caterer info already exists - Returning 409');
+      res.status(409).json({
+        success: false,
+        error: {
+          message: "Caterer info already exists. Use PUT /api/auth/caterer-info to update.",
         },
       });
       return;
@@ -291,7 +319,6 @@ export const catererInfo = async (
       service_area,
       minimum_guests,
       maximum_guests,
-      cuisine_types,
       region,
       delivery_only,
       delivery_plus_setup,
@@ -300,50 +327,24 @@ export const catererInfo = async (
       servers,
     } = req.body;
 
-    // Handle file uploads for food_license and Registration
-    const foodLicenseUrls: string[] = [];
-    const registrationUrls: string[] = [];
-
-    const files = (req as any).files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-
-    // Upload food_license files if any
-    if (files?.food_license && Array.isArray(files.food_license)) {
-      try {
-        for (const file of files.food_license) {
-          const url = await uploadFileToCloudinary(file, 'partyfud/caterer-documents/food-license');
-          foodLicenseUrls.push(url);
-        }
-      } catch (uploadError: any) {
-        res.status(400).json({
-          success: false,
-          error: {
-            message: `Food license file upload failed: ${uploadError.message}`,
-          },
-        });
-        return;
-      }
-    }
-
-    // Upload Registration files if any
-    if (files?.Registration && Array.isArray(files.Registration)) {
-      try {
-        for (const file of files.Registration) {
-          const url = await uploadFileToCloudinary(file, 'partyfud/caterer-documents/registration');
-          registrationUrls.push(url);
-        }
-      } catch (uploadError: any) {
-        res.status(400).json({
-          success: false,
-          error: {
-            message: `Registration file upload failed: ${uploadError.message}`,
-          },
-        });
-        return;
-      }
-    }
+    console.log('🔵 [CREATE CATERER INFO] Request body fields:', {
+      business_name: !!business_name,
+      business_type: !!business_type,
+      business_description: !!business_description,
+      service_area: !!service_area,
+      minimum_guests,
+      maximum_guests,
+      region: !!region,
+      delivery_only,
+      delivery_plus_setup,
+      full_service,
+      staff,
+      servers,
+    });
 
     // Validate required fields
     if (!business_name || !business_type) {
+      console.log('❌ [CREATE CATERER INFO] Validation failed - missing business_name or business_type');
       res.status(400).json({
         success: false,
         error: {
@@ -353,107 +354,353 @@ export const catererInfo = async (
       return;
     }
 
-    // Validate cuisine_types is an array
-    if (!Array.isArray(cuisine_types)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "cuisine_types must be an array",
-        },
-      });
-      return;
+    // Handle file uploads and existing URLs for food_license (single string, not array)
+    let foodLicenseUrl: string | undefined = undefined;
+    const files = (req as any).files;
+    console.log('🔵 [CREATE CATERER INFO] Files received:', files ? Object.keys(files) : 'No files');
+    
+    // Add existing URL from request body if provided
+    if (req.body.food_license && typeof req.body.food_license === "string") {
+      console.log('🔵 [CREATE CATERER INFO] Using existing food_license URL from body');
+      foodLicenseUrl = req.body.food_license;
+    }
+    
+    // Upload new file if provided (only one file allowed per field)
+    if (files?.food_license) {
+      console.log('🔵 [CREATE CATERER INFO] Processing food_license file upload...');
+      // Handle both single file and array (multer returns array even for maxCount: 1)
+      const fileArray = Array.isArray(files.food_license) ? files.food_license : [files.food_license];
+      if (fileArray.length > 0) {
+        // Only process the first file (maxCount: 1 ensures only one file)
+        const file = fileArray[0];
+        console.log('🔵 [CREATE CATERER INFO] Food license file:', file.originalname, file.size, 'bytes');
+        try {
+          const url = await uploadFileToCloudinary(file, "partyfud/caterer-documents/food-license");
+          foodLicenseUrl = url;
+          console.log('✅ [CREATE CATERER INFO] Food license uploaded successfully:', url);
+        } catch (uploadError: any) {
+          console.log('❌ [CREATE CATERER INFO] Food license upload failed:', uploadError.message);
+          res.status(400).json({
+            success: false,
+            error: {
+              message: `Food license upload failed: ${uploadError.message}`,
+            },
+          });
+          return;
+        }
+      }
     }
 
-    // Validate numeric fields if provided
-    if (minimum_guests !== undefined && (isNaN(Number(minimum_guests)) || Number(minimum_guests) < 0)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "minimum_guests must be a positive number",
-        },
-      });
-      return;
+    // Handle file uploads and existing URLs for Registration (single string, not array)
+    let registrationUrl: string | undefined = undefined;
+    
+    // Add existing URL from request body if provided
+    if (req.body.Registration && typeof req.body.Registration === "string") {
+      console.log('🔵 [CREATE CATERER INFO] Using existing Registration URL from body');
+      registrationUrl = req.body.Registration;
+    }
+    
+    // Upload new file if provided (only one file allowed per field)
+    if (files?.Registration) {
+      console.log('🔵 [CREATE CATERER INFO] Processing Registration file upload...');
+      // Handle both single file and array (multer returns array even for maxCount: 1)
+      const fileArray = Array.isArray(files.Registration) ? files.Registration : [files.Registration];
+      if (fileArray.length > 0) {
+        // Only process the first file (maxCount: 1 ensures only one file)
+        const file = fileArray[0];
+        console.log('🔵 [CREATE CATERER INFO] Registration file:', file.originalname, file.size, 'bytes');
+        try {
+          const url = await uploadFileToCloudinary(file, "partyfud/caterer-documents/registration");
+          registrationUrl = url;
+          console.log('✅ [CREATE CATERER INFO] Registration uploaded successfully:', url);
+        } catch (uploadError: any) {
+          console.log('❌ [CREATE CATERER INFO] Registration upload failed:', uploadError.message);
+          res.status(400).json({
+            success: false,
+            error: {
+              message: `Registration document upload failed: ${uploadError.message}`,
+            },
+          });
+          return;
+        }
+      }
     }
 
-    if (maximum_guests !== undefined && (isNaN(Number(maximum_guests)) || Number(maximum_guests) < 0)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "maximum_guests must be a positive number",
-        },
-      });
-      return;
-    }
-
-    if (minimum_guests && maximum_guests && Number(minimum_guests) > Number(maximum_guests)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "minimum_guests cannot be greater than maximum_guests",
-        },
-      });
-      return;
-    }
-
-    if (staff !== undefined && (isNaN(Number(staff)) || Number(staff) < 0)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "staff must be a positive number",
-        },
-      });
-      return;
-    }
-
-    if (servers !== undefined && (isNaN(Number(servers)) || Number(servers) < 0)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "servers must be a positive number",
-        },
-      });
-      return;
-    }
-
-    const result = await authService.createCatererInfo({
+    console.log('🔵 [CREATE CATERER INFO] Creating caterer info in database...');
+    // Create caterer info
+    const catererInfo = await authService.createCatererInfo({
       business_name,
       business_type,
       business_description,
       service_area,
-      minimum_guests: minimum_guests ? Number(minimum_guests) : undefined,
-      maximum_guests: maximum_guests ? Number(maximum_guests) : undefined,
-      cuisine_types,
+      minimum_guests: minimum_guests ? parseInt(minimum_guests) : undefined,
+      maximum_guests: maximum_guests ? parseInt(maximum_guests) : undefined,
       region,
-      delivery_only: delivery_only !== undefined ? delivery_only === true || delivery_only === "true" : undefined,
+      delivery_only: delivery_only !== undefined ? delivery_only === "true" || delivery_only === true : undefined,
       delivery_plus_setup: delivery_plus_setup !== undefined ? delivery_plus_setup === "true" || delivery_plus_setup === true : undefined,
-      full_service: full_service !== undefined ? full_service === true || full_service === "true" : undefined,
-      staff: staff ? Number(staff) : undefined,
-      servers: servers ? Number(servers) : undefined,
-      food_license: foodLicenseUrls,
-      Registration: registrationUrls,
-      caterer_id: userId,
+      full_service: full_service !== undefined ? full_service === "true" || full_service === true : undefined,
+      staff: staff ? parseInt(staff) : undefined,
+      servers: servers ? parseInt(servers) : undefined,
+      food_license: foodLicenseUrl,
+      Registration: registrationUrl,
+      caterer_id: catererId,
     });
 
+    console.log('✅ [CREATE CATERER INFO] Caterer info created:', catererInfo.id);
+
+    // Update user profile_completed status
+    console.log('🔵 [CREATE CATERER INFO] Updating user profile_completed to true...');
+    await prisma.user.update({
+      where: { id: catererId },
+      data: { profile_completed: true },
+    });
+    console.log('✅ [CREATE CATERER INFO] User profile_completed updated');
+
+    console.log('✅ [CREATE CATERER INFO] Success - Returning 201');
     res.status(201).json({
       success: true,
-      data: result,
+      data: catererInfo,
       message: "Caterer info created successfully",
     });
   } catch (error: any) {
-    if (
-      error.message === "User not found" ||
-      error.message === "Only caterers can create caterer info" ||
-      error.message === "Caterer info already exists. Use update endpoint instead."
-    ) {
-      res.status(400).json({
+    console.log('❌ [CREATE CATERER INFO] Error occurred:', error.message);
+    console.log('❌ [CREATE CATERER INFO] Error stack:', error.stack);
+    if (error.message && error.message.includes("already exists")) {
+      res.status(409).json({
         success: false,
         error: {
           message: error.message,
         },
       });
-    } else {
-      next(error);
+      return;
     }
+    next(error);
   }
 };
+
+/**
+ * Update caterer info
+ * PUT /api/auth/caterer-info
+ * Requires authentication middleware
+ * Returns error if caterer info doesn't exist
+ */
+export const updateCatererInfo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  console.log('🟡 [UPDATE CATERER INFO] Request received');
+  console.log('🟡 [UPDATE CATERER INFO] Method:', req.method);
+  console.log('🟡 [UPDATE CATERER INFO] Headers:', JSON.stringify(req.headers, null, 2));
+  
+  try {
+    // Get caterer_id from decoded token
+    const catererId = (req as any).user?.userId;
+    console.log('🟡 [UPDATE CATERER INFO] Caterer ID from token:', catererId);
+
+    if (!catererId) {
+      console.log('❌ [UPDATE CATERER INFO] No caterer ID found - Unauthorized');
+      res.status(401).json({
+        success: false,
+        error: {
+          message: "Unauthorized",
+        },
+      });
+      return;
+    }
+
+    // Verify user is a caterer
+    console.log('🟡 [UPDATE CATERER INFO] Fetching user by ID...');
+    const user = await authService.getUserById(catererId);
+    console.log('🟡 [UPDATE CATERER INFO] User type:', user.type);
+    
+    if (user.type !== "CATERER") {
+      console.log('❌ [UPDATE CATERER INFO] User is not a caterer - Forbidden');
+      res.status(403).json({
+        success: false,
+        error: {
+          message: "Only caterers can update caterer info",
+        },
+      });
+      return;
+    }
+
+    const {
+      business_name,
+      business_type,
+      business_description,
+      service_area,
+      minimum_guests,
+      maximum_guests,
+      region,
+      delivery_only,
+      delivery_plus_setup,
+      full_service,
+      staff,
+      servers,
+    } = req.body;
+
+    console.log('🟡 [UPDATE CATERER INFO] Request body fields:', {
+      business_name: !!business_name,
+      business_type: !!business_type,
+      business_description: !!business_description,
+      service_area: !!service_area,
+      minimum_guests,
+      maximum_guests,
+      region: !!region,
+      delivery_only,
+      delivery_plus_setup,
+      full_service,
+      staff,
+      servers,
+    });
+
+    // Validate required fields
+    if (!business_name || !business_type) {
+      console.log('❌ [UPDATE CATERER INFO] Validation failed - missing business_name or business_type');
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "business_name and business_type are required",
+        },
+      });
+      return;
+    }
+
+    // Get existing caterer info to preserve file URLs if not updated
+    console.log('🟡 [UPDATE CATERER INFO] Checking if caterer info exists...');
+    const existingCatererInfo = await authService.getCatererInfo(catererId);
+    console.log('🟡 [UPDATE CATERER INFO] Existing caterer info:', existingCatererInfo ? 'Found' : 'Not found');
+    
+    if (!existingCatererInfo) {
+      console.log('❌ [UPDATE CATERER INFO] Caterer info not found - Returning 404');
+      res.status(404).json({
+        success: false,
+        error: {
+          message: "Caterer info not found. Use POST /api/auth/caterer-info to create.",
+        },
+      });
+      return;
+    }
+
+    // Handle file uploads and existing URLs for food_license (single string, not array)
+    let foodLicenseUrl: string | undefined = undefined;
+    const files = (req as any).files;
+    console.log('🟡 [UPDATE CATERER INFO] Files received:', files ? Object.keys(files) : 'No files');
+    
+    // Upload new file if provided (only one file allowed per field)
+    if (files?.food_license) {
+      console.log('🟡 [UPDATE CATERER INFO] Processing food_license file upload...');
+      // Handle both single file and array (multer returns array even for maxCount: 1)
+      const fileArray = Array.isArray(files.food_license) ? files.food_license : [files.food_license];
+      if (fileArray.length > 0) {
+        // Only process the first file (maxCount: 1 ensures only one file)
+        const file = fileArray[0];
+        console.log('🟡 [UPDATE CATERER INFO] Food license file:', file.originalname, file.size, 'bytes');
+        try {
+          const url = await uploadFileToCloudinary(file, "partyfud/caterer-documents/food-license");
+          foodLicenseUrl = url;
+          console.log('✅ [UPDATE CATERER INFO] Food license uploaded successfully:', url);
+        } catch (uploadError: any) {
+          console.log('❌ [UPDATE CATERER INFO] Food license upload failed:', uploadError.message);
+          res.status(400).json({
+            success: false,
+            error: {
+              message: `Food license upload failed: ${uploadError.message}`,
+            },
+          });
+          return;
+        }
+      }
+    } else if (req.body.food_license && typeof req.body.food_license === "string") {
+      // Use existing URL from request body if provided
+      console.log('🟡 [UPDATE CATERER INFO] Using food_license URL from body');
+      foodLicenseUrl = req.body.food_license;
+    } else {
+      // Preserve existing file URL if not provided
+      console.log('🟡 [UPDATE CATERER INFO] Preserving existing food_license URL');
+      foodLicenseUrl = existingCatererInfo.food_license || undefined;
+    }
+
+    // Handle file uploads and existing URLs for Registration (single string, not array)
+    let registrationUrl: string | undefined = undefined;
+    
+    // Upload new file if provided (only one file allowed per field)
+    if (files?.Registration) {
+      console.log('🟡 [UPDATE CATERER INFO] Processing Registration file upload...');
+      // Handle both single file and array (multer returns array even for maxCount: 1)
+      const fileArray = Array.isArray(files.Registration) ? files.Registration : [files.Registration];
+      if (fileArray.length > 0) {
+        // Only process the first file (maxCount: 1 ensures only one file)
+        const file = fileArray[0];
+        console.log('🟡 [UPDATE CATERER INFO] Registration file:', file.originalname, file.size, 'bytes');
+        try {
+          const url = await uploadFileToCloudinary(file, "partyfud/caterer-documents/registration");
+          registrationUrl = url;
+          console.log('✅ [UPDATE CATERER INFO] Registration uploaded successfully:', url);
+        } catch (uploadError: any) {
+          console.log('❌ [UPDATE CATERER INFO] Registration upload failed:', uploadError.message);
+          res.status(400).json({
+            success: false,
+            error: {
+              message: `Registration document upload failed: ${uploadError.message}`,
+            },
+          });
+          return;
+        }
+      }
+    } else if (req.body.Registration && typeof req.body.Registration === "string") {
+      // Use existing URL from request body if provided
+      console.log('🟡 [UPDATE CATERER INFO] Using Registration URL from body');
+      registrationUrl = req.body.Registration;
+    } else {
+      // Preserve existing file URL if not provided
+      console.log('🟡 [UPDATE CATERER INFO] Preserving existing Registration URL');
+      registrationUrl = existingCatererInfo.Registration || undefined;
+    }
+
+    console.log('🟡 [UPDATE CATERER INFO] Updating caterer info in database...');
+    // Update caterer info
+    const catererInfo = await authService.updateCatererInfo({
+      business_name,
+      business_type,
+      business_description,
+      service_area,
+      minimum_guests: minimum_guests ? parseInt(minimum_guests) : undefined,
+      maximum_guests: maximum_guests ? parseInt(maximum_guests) : undefined,
+      region,
+      delivery_only: delivery_only !== undefined ? delivery_only === "true" || delivery_only === true : undefined,
+      delivery_plus_setup: delivery_plus_setup !== undefined ? delivery_plus_setup === "true" || delivery_plus_setup === true : undefined,
+      full_service: full_service !== undefined ? full_service === "true" || full_service === true : undefined,
+      staff: staff ? parseInt(staff) : undefined,
+      servers: servers ? parseInt(servers) : undefined,
+      food_license: foodLicenseUrl,
+      Registration: registrationUrl,
+      caterer_id: catererId,
+    });
+
+    console.log('✅ [UPDATE CATERER INFO] Caterer info updated:', catererInfo.id);
+    console.log('✅ [UPDATE CATERER INFO] Success - Returning 200');
+    
+    res.status(200).json({
+      success: true,
+      data: catererInfo,
+      message: "Caterer info updated successfully",
+    });
+  } catch (error: any) {
+    console.log('❌ [UPDATE CATERER INFO] Error occurred:', error.message);
+    console.log('❌ [UPDATE CATERER INFO] Error stack:', error.stack);
+    if (error.message && error.message.includes("not found")) {
+      res.status(404).json({
+        success: false,
+        error: {
+          message: error.message,
+        },
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
 

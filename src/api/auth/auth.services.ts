@@ -166,34 +166,36 @@ export interface CatererInfoData {
   service_area?: string;
   minimum_guests?: number;
   maximum_guests?: number;
-  cuisine_types: string[];
   region?: string;
   delivery_only?: boolean;
   delivery_plus_setup?: boolean;
   full_service?: boolean;
   staff?: number;
   servers?: number;
-  food_license?: string[];
-  Registration?: string[];
+  food_license?: string;
+  Registration?: string;
   caterer_id: string;
 }
 
 /**
- * Create or update caterer info
+ * Get caterer info by caterer_id
  */
-export const createCatererInfo = async (data: CatererInfoData) => {
-  // Check if user exists and is a caterer
-  const user = await prisma.user.findUnique({
-    where: { id: data.caterer_id },
+export const getCatererInfo = async (catererId: string) => {
+  const catererInfo = await prisma.catererinfo.findUnique({
+    where: { caterer_id: catererId },
   });
 
-  if (!user) {
-    throw new Error("User not found");
-  }
+  return catererInfo;
+};
 
-  if (user.type !== "CATERER") {
-    throw new Error("Only caterers can create caterer info");
-  }
+/**
+ * Create caterer info (only if it doesn't exist)
+ */
+export const createCatererInfo = async (data: CatererInfoData) => {
+  // Ensure string fields are properly formatted (single strings, not arrays)
+  // Prisma expects String? fields to be strings or undefined
+  const foodLicense = data.food_license ? String(data.food_license) : undefined;
+  const registration = data.Registration ? String(data.Registration) : undefined;
 
   // Check if caterer info already exists
   const existingCatererInfo = await prisma.catererinfo.findUnique({
@@ -201,11 +203,11 @@ export const createCatererInfo = async (data: CatererInfoData) => {
   });
 
   if (existingCatererInfo) {
-    throw new Error("Caterer info already exists. Use update endpoint instead.");
+    throw new Error("Caterer info already exists. Use PUT /api/auth/caterer-info to update.");
   }
 
-  // Create caterer info
-  const catererInfo = await prisma.catererinfo.create({
+  // Create new caterer info
+  const newCatererInfo = await prisma.catererinfo.create({
     data: {
       business_name: data.business_name,
       business_type: data.business_type,
@@ -213,33 +215,66 @@ export const createCatererInfo = async (data: CatererInfoData) => {
       service_area: data.service_area,
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
-      cuisine_types: data.cuisine_types,
       region: data.region,
       delivery_only: data.delivery_only ?? true,
       delivery_plus_setup: data.delivery_plus_setup ?? true,
       full_service: data.full_service ?? true,
       staff: data.staff,
       servers: data.servers,
-      food_license: (data.food_license || []) as any,
-      Registration: (data.Registration || []) as any,
+      food_license: foodLicense,
+      Registration: registration,
       caterer_id: data.caterer_id,
-    } as any,
-    include: {
-      caterer: {
-        select: {
-          id: true,
-          first_name: true,
-          last_name: true,
-          email: true,
-          phone: true,
-          company_name: true,
-          image_url: true,
-          type: true,
-        },
-      },
     },
   });
 
-  return catererInfo;
+  return newCatererInfo;
 };
+
+/**
+ * Update caterer info (only if it exists)
+ */
+export const updateCatererInfo = async (data: CatererInfoData) => {
+  // Check if caterer info exists
+  const existingCatererInfo = await prisma.catererinfo.findUnique({
+    where: { caterer_id: data.caterer_id },
+  });
+
+  if (!existingCatererInfo) {
+    throw new Error("Caterer info not found. Use POST /api/auth/caterer-info to create.");
+  }
+
+  // Prepare update data - only include fields that are provided
+  // Preserve existing file URLs if new ones aren't provided
+  const updateData: any = {};
+  
+  if (data.business_name !== undefined) updateData.business_name = data.business_name;
+  if (data.business_type !== undefined) updateData.business_type = data.business_type;
+  if (data.business_description !== undefined) updateData.business_description = data.business_description;
+  if (data.service_area !== undefined) updateData.service_area = data.service_area;
+  if (data.minimum_guests !== undefined) updateData.minimum_guests = data.minimum_guests;
+  if (data.maximum_guests !== undefined) updateData.maximum_guests = data.maximum_guests;
+  if (data.region !== undefined) updateData.region = data.region;
+  if (data.delivery_only !== undefined) updateData.delivery_only = data.delivery_only;
+  if (data.delivery_plus_setup !== undefined) updateData.delivery_plus_setup = data.delivery_plus_setup;
+  if (data.full_service !== undefined) updateData.full_service = data.full_service;
+  if (data.staff !== undefined) updateData.staff = data.staff;
+  if (data.servers !== undefined) updateData.servers = data.servers;
+  
+  // Handle file URLs - use new if provided, otherwise keep existing
+  if (data.food_license !== undefined) {
+    updateData.food_license = data.food_license ? String(data.food_license) : null;
+  }
+  if (data.Registration !== undefined) {
+    updateData.Registration = data.Registration ? String(data.Registration) : null;
+  }
+
+  // Update existing caterer info
+  const updatedCatererInfo = await prisma.catererinfo.update({
+    where: { caterer_id: data.caterer_id },
+    data: updateData,
+  });
+
+  return updatedCatererInfo;
+};
+
 

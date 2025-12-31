@@ -16,6 +16,7 @@ model User {
   password      String
   company_name  String?
   image_url     String?
+  profile_completed Boolean       @default(false)
   verified      Boolean       @default(false)
   type          UserType      @default(USER)
   created_at    DateTime      @default(now())
@@ -34,19 +35,26 @@ model catererinfo {
   service_area         String?
   minimum_guests       Int?
   maximum_guests       Int?
-  cuisine_types        String[]
   region               String?
   delivery_only        Boolean  @default(true)
   delivery_plus_setup  Boolean  @default(true)
   full_service         Boolean  @default(true)
   staff                Int?
   servers              Int?
-  food_license         String[]
-  Registration         String[]
+  food_license         String?
+  Registration         String?
   caterer_id           String   @unique
+  status               Status   @default(PENDING)
   caterer              User     @relation(fields: [caterer_id], references: [id], onDelete: Cascade)
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+  BLOCKED
 }
 
 model CuisineType {
