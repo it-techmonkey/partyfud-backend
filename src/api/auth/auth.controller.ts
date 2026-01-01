@@ -448,13 +448,16 @@ export const createCatererInfo = async (
 
     console.log('✅ [CREATE CATERER INFO] Caterer info created:', catererInfo.id);
 
-    // Update user profile_completed status
-    console.log('🔵 [CREATE CATERER INFO] Updating user profile_completed to true...');
+    // Update user profile_completed and verified status
+    console.log('🔵 [CREATE CATERER INFO] Updating user profile_completed and verified to true...');
     await prisma.user.update({
       where: { id: catererId },
-      data: { profile_completed: true },
+      data: { 
+        profile_completed: true,
+        verified: true,
+      },
     });
-    console.log('✅ [CREATE CATERER INFO] User profile_completed updated');
+    console.log('✅ [CREATE CATERER INFO] User profile_completed and verified updated');
 
     console.log('✅ [CREATE CATERER INFO] Success - Returning 201');
     res.status(201).json({
@@ -680,6 +683,18 @@ export const updateCatererInfo = async (
     });
 
     console.log('✅ [UPDATE CATERER INFO] Caterer info updated:', catererInfo.id);
+
+    // Update user profile_completed and verified status
+    console.log('🔵 [UPDATE CATERER INFO] Updating user profile_completed and verified to true...');
+    await prisma.user.update({
+      where: { id: catererId },
+      data: { 
+        profile_completed: true,
+        verified: true,
+      },
+    });
+    console.log('✅ [UPDATE CATERER INFO] User profile_completed and verified updated');
+
     console.log('✅ [UPDATE CATERER INFO] Success - Returning 200');
     
     res.status(200).json({
