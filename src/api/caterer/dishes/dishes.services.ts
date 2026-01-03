@@ -5,7 +5,7 @@ export interface CreateDishData {
   image_url?: string;
   cuisine_type: string; // Changed from cuisine_type_id to cuisine_type (name)
   category: string; // Changed from category_id to category (name)
-  sub_category: string; // Changed from sub_category_id to sub_category (name)
+  sub_category?: string; // Changed from sub_category_id to sub_category (name) - now optional
   quantity_in_gm?: number;
   pieces?: number;
   price: number;
@@ -65,6 +65,98 @@ export const getDishesByCatererId = async (
 };
 
 /**
+ * Get all dishes by caterer ID grouped by category
+ * Returns all categories, even if they have no dishes
+ */
+export const getDishesByCatererIdGrouped = async (
+  catererId: string,
+  filters?: {
+    cuisine_type_id?: string;
+    category_id?: string;
+  }
+) => {
+  // Get all categories first (to include empty categories)
+  const allCategories = await prisma.category.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  // Build where clause for dishes
+  const where: any = {
+    caterer_id: catererId,
+  };
+
+  if (filters?.cuisine_type_id) {
+    where.cuisine_type_id = filters.cuisine_type_id;
+  }
+
+  if (filters?.category_id) {
+    where.category_id = filters.category_id;
+  }
+
+  // Get all dishes for this caterer
+  const dishes = await prisma.dish.findMany({
+    where,
+    include: {
+      cuisine_type: true,
+      category: true,
+      sub_category: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  // Group dishes by category_id
+  const dishesByCategory = new Map<string, any[]>();
+  const uncategorizedDishes: any[] = [];
+
+  dishes.forEach((dish: any) => {
+    const categoryId = dish.category_id;
+    if (categoryId) {
+      if (!dishesByCategory.has(categoryId)) {
+        dishesByCategory.set(categoryId, []);
+      }
+      dishesByCategory.get(categoryId)!.push(dish);
+    } else {
+      uncategorizedDishes.push(dish);
+    }
+  });
+
+  // Build response structure with all categories
+  const categoriesWithDishes = allCategories.map((category) => {
+    const categoryDishes = dishesByCategory.get(category.id) || [];
+    return {
+      category: {
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        created_at: category.created_at,
+        updated_at: category.updated_at,
+      },
+      dishes: categoryDishes,
+    };
+  });
+
+  // Add uncategorized dishes if any exist
+  if (uncategorizedDishes.length > 0) {
+    categoriesWithDishes.push({
+      category: {
+        id: 'uncategorized',
+        name: 'Uncategorized',
+        description: 'Dishes without a valid category',
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      dishes: uncategorizedDishes,
+    });
+  }
+
+  return { categories: categoriesWithDishes };
+};
+
+/**
  * Get dish by ID and verify it belongs to the caterer
  */
 export const getDishById = async (dishId: string, catererId: string) => {
@@ -119,15 +211,19 @@ export const createDish = async (catererId: string, data: CreateDishData) => {
   }
 
   // Look up sub category by name and category_id (since subcategory names are unique per category)
-  const subCategory = await prisma.subCategory.findFirst({
-    where: {
-      name: data.sub_category,
-      category_id: category.id,
-    },
-  });
+  // Only if sub_category is provided
+  let subCategory = null;
+  if (data.sub_category) {
+    subCategory = await prisma.subCategory.findFirst({
+      where: {
+        name: data.sub_category,
+        category_id: category.id,
+      },
+    });
 
-  if (!subCategory) {
-    throw new Error(`Sub category "${data.sub_category}" not found for category "${data.category}"`);
+    if (!subCategory) {
+      throw new Error(`Sub category "${data.sub_category}" not found for category "${data.category}"`);
+    }
   }
 
   const dish = await prisma.dish.create({
@@ -136,7 +232,7 @@ export const createDish = async (catererId: string, data: CreateDishData) => {
       image_url: data.image_url,
       cuisine_type_id: cuisineType.id,
       category_id: category.id,
-      sub_category_id: subCategory.id,
+      sub_category_id: subCategory?.id || null, // Allow null if category has no subcategories
       caterer_id: catererId,
       quantity_in_gm: data.quantity_in_gm,
       pieces: data.pieces ?? 1,

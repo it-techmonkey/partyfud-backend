@@ -5,40 +5,9 @@ import apiRoutes from "./api/routes";
 
 const app = express();
 
-// CORS configuration with environment-based defaults
-const getCorsOrigins = () => {
-  if (process.env.ALLOWED_ORIGINS) {
-    return process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
-  }
-  
-  // Development defaults
-  if (process.env.NODE_ENV !== 'production') {
-    return ['https://partyfud-frontend.vercel.app/', 'http://localhost:3000'];
-  }
-  
-  // Production: require explicit configuration
-  return [];
-};
-
-const allowedOrigins = getCorsOrigins();
-
+// CORS configuration - open to all origins
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.length === 0) {
-      console.warn('⚠️  No CORS origins configured! All requests will be blocked.');
-      return callback(new Error('CORS not configured'));
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`🚫 CORS blocked origin: ${origin}`);
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
+  origin: true, // Allow all origins
   credentials: true,
   optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204
 }));

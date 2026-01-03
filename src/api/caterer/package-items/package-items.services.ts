@@ -91,8 +91,8 @@ export const createPackageItem = async (
 };
 
 /**
- * Get all package items for a caterer
- * Returns all package items linked with the caterer_id
+ * Get all package items for a caterer, grouped by category
+ * Returns all package items linked with the caterer_id, organized by category
  * @param catererId - The caterer ID
  * @param draftOnly - If true, only returns items without package_id (draft items)
  */
@@ -115,6 +115,15 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
     throw new Error("Invalid caterer");
   }
 
+  // Get all categories first (to include empty categories)
+  console.log("🟢 [SERVICE] Fetching all categories...");
+  const allCategories = await prisma.category.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  });
+  console.log("🟢 [SERVICE] Found", allCategories.length, "categories");
+
   // Build where clause
   const whereClause: any = {
       caterer_id: catererId,
@@ -130,23 +139,22 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
   console.log("🟢 [SERVICE] Querying package items with where clause:", JSON.stringify(whereClause));
   
   try {
-    // First, get package items without package relation to avoid any issues
-  const packageItems = await prisma.packageItem.findMany({
+    // Get package items with all relations
+    const packageItems = await prisma.packageItem.findMany({
       where: whereClause,
-    include: {
-      dish: {
-        include: {
-          cuisine_type: true,
-          category: true,
-          sub_category: true,
+      include: {
+        dish: {
+          include: {
+            cuisine_type: true,
+            category: true,
+            sub_category: true,
+          },
         },
       },
-        // Don't include package relation initially to avoid errors
-    },
-    orderBy: {
-      created_at: "desc",
-    },
-  });
+      orderBy: {
+        created_at: "desc",
+      },
+    });
 
     console.log("🟢 [SERVICE] Found", packageItems.length, "package items");
     console.log("🟢 [SERVICE] Package items IDs:", packageItems.map((item: any) => item.id));
@@ -196,8 +204,59 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
       })
     );
 
-    console.log("🟢 [SERVICE] Returning", itemsWithPackages.length, "items with packages resolved");
-    return itemsWithPackages;
+    // Group items by category_id
+    const itemsByCategory = new Map<string, any[]>();
+    const uncategorizedItems: any[] = [];
+    
+    itemsWithPackages.forEach((item: any) => {
+      const categoryId = item.dish?.category_id;
+      if (categoryId) {
+        if (!itemsByCategory.has(categoryId)) {
+          itemsByCategory.set(categoryId, []);
+        }
+        itemsByCategory.get(categoryId)!.push(item);
+      } else {
+        // Items without a valid category
+        uncategorizedItems.push(item);
+      }
+    });
+
+    console.log("🟢 [SERVICE] Grouped items into", itemsByCategory.size, "categories");
+    if (uncategorizedItems.length > 0) {
+      console.log("⚠️ [SERVICE] Found", uncategorizedItems.length, "items without valid category");
+    }
+
+    // Build response structure with all categories
+    const categoriesWithItems = allCategories.map((category) => {
+      const items = itemsByCategory.get(category.id) || [];
+      return {
+        category: {
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          created_at: category.created_at,
+          updated_at: category.updated_at,
+        },
+        items: items,
+      };
+    });
+
+    // Add uncategorized items if any exist
+    if (uncategorizedItems.length > 0) {
+      categoriesWithItems.push({
+        category: {
+          id: 'uncategorized',
+          name: 'Uncategorized',
+          description: 'Items without a valid category',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        items: uncategorizedItems,
+      });
+    }
+
+    console.log("🟢 [SERVICE] Returning", categoriesWithItems.length, "categories with items grouped");
+    return { categories: categoriesWithItems };
   } catch (error: any) {
     console.error("❌ [SERVICE] Error in getPackageItems query:");
     console.error("❌ [SERVICE] Error message:", error.message);

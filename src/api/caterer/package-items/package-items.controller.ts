@@ -123,12 +123,12 @@ export const getPackageItems = async (
     console.log("🔵 [GET PACKAGE ITEMS] Draft only filter:", draftOnly);
 
     console.log("🔵 [GET PACKAGE ITEMS] Calling service.getPackageItems with catererId:", catererId, "draftOnly:", draftOnly);
-    const packageItems = await packageItemsService.getPackageItems(catererId, draftOnly);
-    console.log("✅ [GET PACKAGE ITEMS] Service returned", packageItems?.length || 0, "items");
+    const result = await packageItemsService.getPackageItems(catererId, draftOnly);
+    console.log("✅ [GET PACKAGE ITEMS] Service returned", result?.categories?.length || 0, "categories");
 
     res.status(200).json({
       success: true,
-      data: packageItems,
+      data: result,
     });
   } catch (error: any) {
     console.error("❌ [GET PACKAGE ITEMS] Error occurred:");

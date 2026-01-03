@@ -19,16 +19,31 @@ export const getDishes = async (
     // Get query parameters for filters
     const cuisine_type_id = req.query.cuisine_type_id as string | undefined;
     const category_id = req.query.category_id as string | undefined;
+    const groupByCategory = req.query.group_by_category === 'true' || req.query.group_by_category === '1';
 
-    const dishes = await dishesService.getDishesByCatererId(catererId, {
-      cuisine_type_id,
-      category_id,
-    });
+    // If group_by_category is requested, return grouped structure
+    if (groupByCategory) {
+      const groupedDishes = await dishesService.getDishesByCatererIdGrouped(catererId, {
+        cuisine_type_id,
+        category_id,
+      });
 
-    res.status(200).json({
-      success: true,
-      data: dishes,
-    });
+      res.status(200).json({
+        success: true,
+        data: groupedDishes,
+      });
+    } else {
+      // Return flat array (existing behavior)
+      const dishes = await dishesService.getDishesByCatererId(catererId, {
+        cuisine_type_id,
+        category_id,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: dishes,
+      });
+    }
   } catch (error: any) {
     const statusCode = error.message?.includes("not found") ? 404 : 500;
     res.status(statusCode).json({
@@ -213,22 +228,7 @@ export const createDish = async (
       });
       return;
     }
-
-    // Note: Schema requires sub_category_id, so if category has no subcategories,
-    // we cannot create a dish. Categories without subcategories would need:
-    // 1. A default "General" subcategory created in seed, OR
-    // 2. Schema migration to make sub_category_id nullable
-    // For now, we require sub_category_id for all categories
-
-    if (!subCategory) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "This category requires a sub-category. Please ensure the category has subcategories defined.",
-        },
-      });
-      return;
-    }
+    // If category has no subcategories, subCategory can be null (sub_category_id is now optional in schema)
 
     // Parse freeform_ids if provided (can be string or array)
     // FormData sends multiple values with the same key as an array
@@ -245,19 +245,25 @@ export const createDish = async (
       }
     }
 
-    const dish = await dishesService.createDish(catererId, {
+    const dishData: any = {
       name,
       image_url,
       cuisine_type: cuisineType.name,
       category: category.name,
-      sub_category: subCategory.name,
       quantity_in_gm: parsedQuantityInGm,
       pieces: parsedPieces,
       price: parsedPrice,
       currency: currency || 'AED',
       is_active: parsedIsActive,
       freeform_ids: freeformIdsArray,
-    });
+    };
+
+    // Only include sub_category if subCategory exists
+    if (subCategory) {
+      dishData.sub_category = subCategory.name;
+    }
+
+    const dish = await dishesService.createDish(catererId, dishData);
 
     res.status(201).json({
       success: true,
