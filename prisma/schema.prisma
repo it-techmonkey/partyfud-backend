@@ -145,6 +145,7 @@ model Dish {
 model PackageType {
   id          String    @id @default(uuid())
   name        String    @unique
+  image_url   String?
   description String?
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt

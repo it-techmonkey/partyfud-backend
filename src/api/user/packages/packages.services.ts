@@ -64,6 +64,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
     package_type: {
       id: pkg.package_type.id,
       name: pkg.package_type.name,
+      image_url: pkg.package_type.image_url,
       description: pkg.package_type.description,
     },
     cover_image_url: pkg.cover_image_url,
@@ -170,6 +171,7 @@ export const getPackageById = async (packageId: string) => {
     package_type: {
       id: pkg.package_type.id,
       name: pkg.package_type.name,
+      image_url: pkg.package_type.image_url,
       description: pkg.package_type.description,
     },
     cover_image_url: pkg.cover_image_url,
@@ -245,10 +247,31 @@ export interface PackageFilters {
   occasion_id?: string;
   cuisine_type_id?: string;
   category_id?: string;
+  package_type?: string;
   search?: string;
   menu_type?: 'fixed' | 'customizable';
   sort_by?: 'price_asc' | 'price_desc' | 'rating_desc' | 'created_desc';
 }
+
+/**
+ * Get all package types
+ */
+export const getAllPackageTypes = async () => {
+  const packageTypes = await prisma.packageType.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return packageTypes.map((pt) => ({
+    id: pt.id,
+    name: pt.name,
+    image_url: pt.image_url,
+    description: pt.description,
+    created_at: pt.created_at,
+    updated_at: pt.updated_at,
+  }));
+};
 
 export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) => {
   // Build where clause for packages
@@ -322,6 +345,16 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     packageWhere.occasions = {
       some: {
         occasion_id: filters.occasion_id,
+      },
+    };
+  }
+
+  // Filter by package_type name
+  if (filters.package_type) {
+    packageWhere.package_type = {
+      name: {
+        equals: filters.package_type,
+        mode: 'insensitive',
       },
     };
   }
@@ -423,6 +456,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     package_type: {
       id: pkg.package_type.id,
       name: pkg.package_type.name,
+      image_url: pkg.package_type.image_url,
       description: pkg.package_type.description,
     },
     cover_image_url: pkg.cover_image_url,

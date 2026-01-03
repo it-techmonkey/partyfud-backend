@@ -14,6 +14,12 @@ const router = Router();
 router.get("/caterer/:catererId", packagesController.getPackagesByCatererId);
 
 /**
+ * Get all package types
+ * GET /api/user/packages/types
+ */
+router.get("/types", packagesController.getAllPackageTypes);
+
+/**
  * Get all packages with filters
  * GET /api/user/packages/all?location=xxx&min_price=xxx&max_price=xxx&...
  * 
@@ -30,6 +36,7 @@ router.get("/caterer/:catererId", packagesController.getPackagesByCatererId);
  * - occasion_id: Filter by occasion/event type
  * - cuisine_type_id: Filter by cuisine type
  * - category_id: Filter by category
+ * - package_type: Filter by package type name (case-insensitive)
  * - search: Search in package name
  * - menu_type: 'fixed' or 'customizable'
  * - sort_by: 'price_asc', 'price_desc', 'rating_desc', 'created_desc'
