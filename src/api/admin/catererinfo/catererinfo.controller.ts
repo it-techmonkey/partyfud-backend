@@ -135,6 +135,7 @@ export const updateCatererInfoByIdController = async (
       full_service,
       staff,
       servers,
+      commission_rate,
       status,
     } = req.body;
 
@@ -156,6 +157,7 @@ export const updateCatererInfoByIdController = async (
     if (full_service !== undefined) updateData.full_service = full_service === "true" || full_service === true;
     if (staff !== undefined) updateData.staff = parseInt(staff);
     if (servers !== undefined) updateData.servers = parseInt(servers);
+    if (commission_rate !== undefined) updateData.commission_rate = parseInt(commission_rate);
     if (status !== undefined) {
       // Validate status value
       const validStatuses: Status[] = ["PENDING", "APPROVED", "REJECTED", "BLOCKED"];

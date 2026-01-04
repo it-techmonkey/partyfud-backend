@@ -105,3 +105,45 @@ export const getCatererById = async (
   }
 };
 
+/**
+ * Get all dishes by caterer ID
+ * GET /api/user/caterers/:id/dishes
+ */
+export const getDishesByCatererId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "Caterer ID is required",
+        },
+      });
+      return;
+    }
+
+    const dishes = await catererService.getDishesByCatererId(id);
+
+    res.status(200).json({
+      success: true,
+      data: dishes,
+      count: dishes.length,
+    });
+  } catch (error: any) {
+    console.error("Error fetching dishes by caterer:", error);
+    const statusCode = error.message?.includes("not found") || 
+                       error.message?.includes("not approved") ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      error: {
+        message: error.message || "An error occurred while fetching dishes",
+      },
+    });
+  }
+};
+

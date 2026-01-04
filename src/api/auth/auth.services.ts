@@ -174,6 +174,7 @@ export interface CatererInfoData {
   servers?: number;
   food_license?: string;
   Registration?: string;
+  commission_rate?: number;
   caterer_id: string;
 }
 
@@ -224,7 +225,8 @@ export const createCatererInfo = async (data: CatererInfoData) => {
       food_license: foodLicense,
       Registration: registration,
       caterer_id: data.caterer_id,
-    },
+      ...(data.commission_rate !== undefined && { commission_rate: data.commission_rate } as any),
+    } as any,
   });
 
   return newCatererInfo;
@@ -259,6 +261,7 @@ export const updateCatererInfo = async (data: CatererInfoData) => {
   if (data.full_service !== undefined) updateData.full_service = data.full_service;
   if (data.staff !== undefined) updateData.staff = data.staff;
   if (data.servers !== undefined) updateData.servers = data.servers;
+  if (data.commission_rate !== undefined) updateData.commission_rate = data.commission_rate;
   
   // Handle file URLs - use new if provided, otherwise keep existing
   if (data.food_license !== undefined) {

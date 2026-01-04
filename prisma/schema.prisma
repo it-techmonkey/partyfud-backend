@@ -8,23 +8,27 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(uuid())
-  first_name    String
-  last_name     String
-  phone         String
-  email         String        @unique
-  password      String
-  company_name  String?
-  image_url     String?
+  id                String        @id @default(uuid())
+  first_name        String
+  last_name         String
+  phone             String
+  email             String        @unique
+  password          String
+  company_name      String?
+  image_url         String?
   profile_completed Boolean       @default(false)
-  verified      Boolean       @default(false)
-  type          UserType      @default(USER)
-  created_at    DateTime      @default(now())
-  updated_at    DateTime      @updatedAt
-  packages      Package[]
-  dishes        Dish[]
-  package_items PackageItem[]
-  catererinfo   catererinfo?
+  verified          Boolean       @default(false)
+  type              UserType      @default(USER)
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+  packages          Package[]
+  dishes            Dish[]
+  package_items     PackageItem[]
+  catererinfo       catererinfo?
+  cart              Cart?
+  orders            Order[]
+  proposals         Proposal[]
+  catererProposals  Proposal[]    @relation("CatererProposals")
 }
 
 model catererinfo {
@@ -83,7 +87,7 @@ model SubCategory {
   description String?
   category_id String
   created_at  DateTime @default(now())
-  updated_at DateTime @updatedAt
+  updated_at  DateTime @updatedAt
   dishes      Dish[]
   category    Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
 
@@ -143,13 +147,15 @@ model Dish {
 }
 
 model PackageType {
-  id          String    @id @default(uuid())
-  name        String    @unique
+  id          String      @id @default(uuid())
+  name        String      @unique
   image_url   String?
   description String?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
   packages    Package[]
+  cart_items  CartItem[]
+  order_items OrderItem[]
 }
 
 model Occassion {
@@ -193,6 +199,8 @@ model Package {
   category_selections PackageCategorySelection[]
   items               PackageItem[]
   occasions           PackageOccassion[]
+  cart_items          CartItem[]
+  order_items         OrderItem[]
 
   @@index([package_type_id])
   @@index([caterer_id])
@@ -242,3 +250,110 @@ enum UserType {
   CATERER
 }
 
+model Cart {
+  id         String     @id @default(uuid())
+  user_id    String     @unique
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  items      CartItem[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+}
+
+model CartItem {
+  id              String      @id @default(uuid())
+  cart_id         String
+  package_id      String
+  package_type_id String
+  location        String?
+  guests          Int?
+  date            DateTime?
+  price_at_time   Decimal?    @db.Decimal(10, 2)
+  cart            Cart        @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  package         Package     @relation(fields: [package_id], references: [id])
+  package_type    PackageType @relation(fields: [package_type_id], references: [id])
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  @@unique([cart_id, package_id]) // same package once per cart
+  @@index([cart_id])
+  @@index([package_id])
+  @@index([package_type_id])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  user_id     String
+  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  total_price Decimal     @db.Decimal(10, 2)
+  currency    String      @default("AED")
+  status      OrderStatus @default(PENDING)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  items       OrderItem[]
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model OrderItem {
+  id              String      @id @default(uuid())
+  order_id        String
+  package_id      String
+  package_type_id String
+  location        String?
+  guests          Int?
+  date            DateTime?
+  price_at_time   Decimal     @db.Decimal(10, 2)
+  order           Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  package         Package     @relation(fields: [package_id], references: [id], onDelete: Restrict)
+  package_type    PackageType @relation(fields: [package_type_id], references: [id])
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  @@index([order_id])
+  @@index([package_id])
+  @@index([package_type_id])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+model Proposal {
+  id                  String         @id @default(uuid())
+  user_id             String
+  caterer_id          String
+  status              ProposalStatus @default(PENDING)
+  event_type          String?
+  location            String?
+  dietary_preferences String[]       @default([]) // Array of dietary preference strings
+  budget_per_person   Decimal?       @db.Decimal(10, 2)
+  event_date          DateTime?
+  vision              String?        @db.Text
+  guest_count         Int
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  user                User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  caterer             User           @relation("CatererProposals", fields: [caterer_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([caterer_id])
+  @@index([status])
+  @@index([created_at])
+}
+
+enum ProposalStatus {
+  PENDING // Initial status when proposal is created
+  PROCESSING // Caterer is reviewing/processing the proposal
+  QUOTED // Caterer has provided a quote
+  ACCEPTED // User has accepted the quote
+  REJECTED // Caterer rejected the proposal
+  CANCELLED // User cancelled the proposal
+  EXPIRED // Proposal expired (e.g., event date passed)
+}

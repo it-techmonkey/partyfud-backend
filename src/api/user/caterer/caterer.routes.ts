@@ -25,6 +25,14 @@ const router = Router();
 router.post("/", catererController.filterCaterers);
 
 /**
+ * Get all dishes by caterer ID
+ * GET /api/user/caterers/:id/dishes
+ * 
+ * Note: This route must come before /:id to avoid route conflicts
+ */
+router.get("/:id/dishes", catererController.getDishesByCatererId);
+
+/**
  * Get caterer by ID
  * GET /api/user/caterers/:id
  */

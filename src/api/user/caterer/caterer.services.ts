@@ -239,6 +239,7 @@ const formatCatererData = (caterer: any) => {
     business_description: caterer.catererinfo?.business_description,
     staff: caterer.catererinfo?.staff,
     servers: caterer.catererinfo?.servers,
+    commission_rate: caterer.catererinfo?.commission_rate,
     packages: packages.map((pkg: any) => ({
       id: pkg.id,
       name: pkg.name,
@@ -329,5 +330,95 @@ export const getCatererById = async (catererId: string) => {
   }
 
   return formatCatererData(caterer);
+};
+
+/**
+ * Get all dishes by caterer ID
+ * Only returns active dishes from approved caterers
+ */
+export const getDishesByCatererId = async (catererId: string) => {
+  // First verify the caterer exists and is approved
+  const caterer = await prisma.user.findFirst({
+    where: {
+      id: catererId,
+      type: "CATERER",
+      catererinfo: {
+        status: "APPROVED",
+      },
+    },
+  });
+
+  if (!caterer) {
+    throw new Error("Caterer not found or not approved");
+  }
+
+  // Get all active dishes for this caterer
+  const dishes = await prisma.dish.findMany({
+    where: {
+      caterer_id: catererId,
+      is_active: true,
+    },
+    include: {
+      cuisine_type: true,
+      category: true,
+      sub_category: true,
+      caterer: {
+        include: {
+          catererinfo: true,
+        },
+      },
+      free_forms: {
+        include: {
+          freeform: true,
+        },
+      },
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  // Format the response
+  return dishes.map((dish) => ({
+    id: dish.id,
+    name: dish.name,
+    image_url: dish.image_url,
+    cuisine_type: {
+      id: dish.cuisine_type.id,
+      name: dish.cuisine_type.name,
+      description: dish.cuisine_type.description,
+    },
+    category: {
+      id: dish.category.id,
+      name: dish.category.name,
+      description: dish.category.description,
+    },
+    sub_category: dish.sub_category
+      ? {
+          id: dish.sub_category.id,
+          name: dish.sub_category.name,
+          description: dish.sub_category.description,
+        }
+      : null,
+    caterer: dish.caterer
+      ? {
+          id: dish.caterer.id,
+          name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
+          location: dish.caterer.catererinfo?.service_area || dish.caterer.catererinfo?.region || null,
+        }
+      : null,
+    quantity_in_gm: dish.quantity_in_gm,
+    pieces: dish.pieces,
+    price: Number(dish.price),
+    currency: dish.currency,
+    is_active: dish.is_active,
+    free_forms: dish.free_forms.map((df) => ({
+      id: df.freeform.id,
+      name: df.freeform.name,
+      description: df.freeform.description,
+    })),
+    created_at: dish.created_at,
+    updated_at: dish.updated_at,
+  }));
 };
 

@@ -20,6 +20,7 @@ export interface UpdateCatererInfoData {
   servers?: number;
   food_license?: string;
   Registration?: string;
+  commission_rate?: number;
   status?: Status;
 }
 
@@ -106,6 +107,7 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
   if (data.full_service !== undefined) updateData.full_service = data.full_service;
   if (data.staff !== undefined) updateData.staff = data.staff;
   if (data.servers !== undefined) updateData.servers = data.servers;
+  if (data.commission_rate !== undefined) updateData.commission_rate = data.commission_rate;
   if (data.food_license !== undefined) updateData.food_license = data.food_license;
   if (data.Registration !== undefined) updateData.Registration = data.Registration;
   if (data.status !== undefined) updateData.status = data.status;

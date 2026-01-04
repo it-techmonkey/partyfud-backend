@@ -4,6 +4,8 @@ import packagesRoutes from "./packages/packages.routes";
 import packageItemsRoutes from "./package-items/package-items.routes";
 import metadataRoutes from "./metadata.routes";
 import dashboardRoutes from "./dashboard/dashboard.routes";
+import proposalRoutes from "./proposal/proposal.routes";
+import ordersRoutes from "./orders/orders.routes";
 
 const router = Router();
 
@@ -21,5 +23,11 @@ router.use("/packages", packagesRoutes);
 
 // Mount metadata routes at /metadata
 router.use("/metadata", metadataRoutes);
+
+// Mount proposal routes at /proposals
+router.use("/proposals", proposalRoutes);
+
+// Mount order routes at /orders
+router.use("/orders", ordersRoutes);
 
 export default router;

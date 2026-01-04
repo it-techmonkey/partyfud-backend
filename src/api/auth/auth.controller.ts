@@ -325,6 +325,7 @@ export const createCatererInfo = async (
       full_service,
       staff,
       servers,
+      commission_rate,
     } = req.body;
 
     console.log('🔵 [CREATE CATERER INFO] Request body fields:', {
@@ -340,6 +341,7 @@ export const createCatererInfo = async (
       full_service,
       staff,
       servers,
+      commission_rate,
     });
 
     // Validate required fields
@@ -441,6 +443,7 @@ export const createCatererInfo = async (
       full_service: full_service !== undefined ? full_service === "true" || full_service === true : undefined,
       staff: staff ? parseInt(staff) : undefined,
       servers: servers ? parseInt(servers) : undefined,
+      commission_rate: commission_rate ? parseInt(commission_rate) : undefined,
       food_license: foodLicenseUrl,
       Registration: registrationUrl,
       caterer_id: catererId,
@@ -541,6 +544,7 @@ export const updateCatererInfo = async (
       full_service,
       staff,
       servers,
+      commission_rate,
     } = req.body;
 
     console.log('🟡 [UPDATE CATERER INFO] Request body fields:', {
@@ -556,6 +560,7 @@ export const updateCatererInfo = async (
       full_service,
       staff,
       servers,
+      commission_rate,
     });
 
     // Validate required fields
@@ -677,6 +682,7 @@ export const updateCatererInfo = async (
       full_service: full_service !== undefined ? full_service === "true" || full_service === true : undefined,
       staff: staff ? parseInt(staff) : undefined,
       servers: servers ? parseInt(servers) : undefined,
+      commission_rate: commission_rate ? parseInt(commission_rate) : undefined,
       food_license: foodLicenseUrl,
       Registration: registrationUrl,
       caterer_id: catererId,
