@@ -4,6 +4,20 @@ import prisma from "../../../lib/prisma";
  * Get or create cart for a user
  */
 const getOrCreateCart = async (userId: string) => {
+  // Validate userId exists
+  if (!userId) {
+    throw new Error("User authentication required. Please log in to continue.");
+  }
+
+  // Verify user exists in database
+  const userExists = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!userExists) {
+    throw new Error("User account not found. Please log in again.");
+  }
+
   let cart = await prisma.cart.findUnique({
     where: { user_id: userId },
   });
