@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as packagesController from "./packages.controller";
+import { authenticate } from "../../auth/auth.middleware";
 
 const router = Router();
 
@@ -20,6 +21,23 @@ router.get("/caterer/:catererId", packagesController.getPackagesByCatererId);
 router.get("/types", packagesController.getAllPackageTypes);
 
 /**
+ * Get packages created by the authenticated user
+ * GET /api/user/packages/my-packages
+ * 
+ * Requires authentication
+ * Returns only packages created by the logged-in user
+ */
+router.get("/my-packages", authenticate, packagesController.getMyPackages);
+
+/**
+ * Get packages by occasion name
+ * GET /api/user/packages/occasion/:occasionName
+ * 
+ * NOTE: This route must be defined BEFORE /all to avoid route conflicts
+ */
+router.get("/occasion/:occasionName", packagesController.getPackagesByOccasionName);
+
+/**
  * Get all packages with filters
  * GET /api/user/packages/all?location=xxx&min_price=xxx&max_price=xxx&...
  * 
@@ -33,7 +51,8 @@ router.get("/types", packagesController.getAllPackageTypes);
  * - max_guests: Maximum number of guests
  * - min_price: Minimum price
  * - max_price: Maximum price
- * - occasion_id: Filter by occasion/event type
+ * - occasion_id: Filter by occasion/event type ID
+ * - occasion_name: Filter by occasion/event type name (case-insensitive, converts to occasion_id)
  * - cuisine_type_id: Filter by cuisine type
  * - category_id: Filter by category
  * - package_type: Filter by package type name (case-insensitive)
@@ -50,6 +69,23 @@ router.get("/all", packagesController.getAllPackages);
  * NOTE: This must be defined AFTER /all to avoid route conflicts
  */
 router.get("/:packageId", packagesController.getPackageById);
+
+/**
+ * Create a custom package for a user
+ * POST /api/user/packages
+ * 
+ * Requires authentication
+ * 
+ * Request body:
+ * {
+ *   name?: string,                    // Optional, auto-generated if not provided
+ *   dish_ids: string[],              // Required: Array of dish IDs
+ *   people_count: number,             // Required: Number of people
+ *   package_type_id?: string,        // Optional: Package type ID
+ *   quantities?: { [dish_id: string]: number } // Optional: Quantities for each dish
+ * }
+ */
+router.post("/", authenticate, packagesController.createCustomPackage);
 
 /**
  * Get packages by caterer ID (query parameter)

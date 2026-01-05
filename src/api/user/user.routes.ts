@@ -5,6 +5,8 @@ import dishesRoutes from "./dishes/dishes.routes";
 import cartRoutes from "./cart/cart.routes";
 import orderRoutes from "./order/order.routes";
 import proposalRoutes from "./proposal/proposal.routes";
+import occasionRoutes from "./ocassion/ocassion.routes";
+import metadataRoutes from "./metadata.routes";
 
 const router = Router();
 
@@ -25,6 +27,12 @@ router.use("/orders", orderRoutes);
 
 // Mount proposal routes at /proposals
 router.use("/proposals", proposalRoutes);
+
+// Mount occasion routes at /occasions
+router.use("/occasions", occasionRoutes);
+
+// Mount metadata routes at /metadata
+router.use("/metadata", metadataRoutes);
 
 export default router;
 

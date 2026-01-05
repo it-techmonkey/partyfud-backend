@@ -74,6 +74,33 @@ const UNSplashImages = {
     "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop",
     "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&h=600&fit=crop",
   ],
+  indianDishes: [
+    // Salads
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=600&fit=crop",
+    // Soups
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&h=600&fit=crop",
+    // Appetizers
+    "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&h=600&fit=crop",
+    // Main Courses
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+    // Desserts
+    "https://images.unsplash.com/photo-1571875257727-256c39da42af?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1571875257727-256c39da42af?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1571875257727-256c39da42af?w=800&h=600&fit=crop",
+  ],
 };
 
 async function main() {
@@ -82,10 +109,16 @@ async function main() {
   // Clear existing data
   console.log("🧹 Cleaning existing data...");
   try {
+    // Delete in order respecting foreign key constraints
+    // First delete items that reference packages
+    await prisma.cartItem.deleteMany();
+    await prisma.orderItem.deleteMany();
+    // Then delete package-related data
     await prisma.packageOccassion.deleteMany();
     await prisma.packageCategorySelection.deleteMany();
     await prisma.packageItem.deleteMany();
     await prisma.package.deleteMany();
+    // Delete other related data
     await prisma.dishFreeForm.deleteMany();
     await prisma.dish.deleteMany();
     await prisma.subCategory.deleteMany();
@@ -95,6 +128,9 @@ async function main() {
     await prisma.occassion.deleteMany();
     await prisma.packageType.deleteMany();
     await prisma.catererinfo.deleteMany();
+    // Delete orders and carts before users
+    await prisma.order.deleteMany();
+    await prisma.cart.deleteMany();
     await prisma.user.deleteMany();
   } catch (error: any) {
     if (error.code === "P2021" || error.message?.includes("does not exist")) {
@@ -121,9 +157,21 @@ async function main() {
     },
   });
 
-  // 2. Create 12 Caterers
-  console.log("👥 Creating 12 caterers...");
+  // 2. Create 15 Caterers (including Jehangir Restaurant with Indian Premier Buffet, Abela & Co., and The Lime Tree Cafe & Kitchen)
+  console.log("👥 Creating 15 caterers...");
   const catererData = [
+    {
+      first_name: "Jehangir",
+      last_name: "Ahmed",
+      phone: "+971501111111",
+      email: "caterer@partyfud.ae",
+      company_name: "Jehangir Restaurant",
+      service_area: "Dubai",
+      region: "Dubai",
+      business_type: "Cafe & Kitchen",
+      min_guests: 10,
+      max_guests: 100,
+    },
     {
       first_name: "Fatima",
       last_name: "Hassan",
@@ -268,6 +316,30 @@ async function main() {
       min_guests: 50,
       max_guests: 500,
     },
+    {
+      first_name: "Abela",
+      last_name: "Al-Rashid",
+      phone: "+971514567890",
+      email: "abela@abelaco.ae",
+      company_name: "Abela & Co.",
+      service_area: "Dubai, Abu Dhabi",
+      region: "Dubai",
+      business_type: "Arabic Buffet Catering",
+      min_guests: 25,
+      max_guests: 500,
+    },
+    {
+      first_name: "Lime",
+      last_name: "Tree",
+      phone: "+971515678901",
+      email: "info@limetreecafe.ae",
+      company_name: "The Lime Tree Cafe & Kitchen",
+      service_area: "All over UAE",
+      region: "Dubai",
+      business_type: "Cafe & Kitchen",
+      min_guests: 10,
+      max_guests: 200,
+    },
   ];
 
   const caterers = [];
@@ -289,14 +361,16 @@ async function main() {
           create: {
             business_name: data.company_name,
             business_type: data.business_type,
-            business_description: `Premium ${data.business_type.toLowerCase()} services in ${data.region}. We specialize in creating memorable dining experiences for events of all sizes.`,
+            business_description: i === 0 
+              ? `Jehangir Restaurant - A premium Cafe & Kitchen offering authentic Indian cuisine and premier buffet services in ${data.region}. We specialize in traditional Indian dishes with rich spices and flavors for events of all sizes.`
+              : `Premium ${data.business_type.toLowerCase()} services in ${data.region}. We specialize in creating memorable dining experiences for events of all sizes.`,
             service_area: data.service_area,
             region: data.region,
             minimum_guests: data.min_guests,
             maximum_guests: data.max_guests,
-            delivery_only: i % 3 === 0,
-            delivery_plus_setup: i % 3 === 1,
-            full_service: i % 3 === 2,
+            delivery_only: i === 0 ? true : (i % 3 === 0), // Jehangir Restaurant offers delivery
+            delivery_plus_setup: i === 0 ? false : (i % 3 === 1),
+            full_service: i === 0 ? false : (i % 3 === 2),
             staff: 10 + (i * 2),
             servers: 5 + i,
             food_license: `FL-${String(i + 1).padStart(4, "0")}-2024`,
@@ -312,6 +386,7 @@ async function main() {
   // 3. Create Cuisine Types
   console.log("🍽️ Creating cuisine types...");
   const cuisineTypes = await Promise.all([
+    prisma.cuisineType.create({ data: { name: "British", description: "Traditional British cuisine including afternoon tea and high tea" } }),
     prisma.cuisineType.create({ data: { name: "Indian", description: "Authentic Indian cuisine with rich spices and flavors" } }),
     prisma.cuisineType.create({ data: { name: "Arabic", description: "Traditional Middle Eastern and Arabic dishes" } }),
     prisma.cuisineType.create({ data: { name: "Western", description: "European and American style cuisine" } }),
@@ -339,6 +414,7 @@ async function main() {
   const subCategories = await Promise.all([
     prisma.subCategory.create({ data: { name: "Dips & Spreads", category_id: categories[0].id, description: "Hummus, baba ganoush, and other dips" } }),
     prisma.subCategory.create({ data: { name: "Finger Food", category_id: categories[0].id, description: "Small bite-sized appetizers" } }),
+    prisma.subCategory.create({ data: { name: "Finger Sandwiches", category_id: categories[0].id, description: "Traditional British finger sandwiches" } }),
     prisma.subCategory.create({ data: { name: "Grilled", category_id: categories[1].id, description: "Grilled meats and vegetables" } }),
     prisma.subCategory.create({ data: { name: "Curry", category_id: categories[1].id, description: "Curry dishes" } }),
     prisma.subCategory.create({ data: { name: "Pasta", category_id: categories[1].id, description: "Pasta dishes" } }),
@@ -346,6 +422,7 @@ async function main() {
     prisma.subCategory.create({ data: { name: "Cakes", category_id: categories[2].id, description: "Various cake varieties" } }),
     prisma.subCategory.create({ data: { name: "Ice Cream", category_id: categories[2].id, description: "Ice cream and frozen desserts" } }),
     prisma.subCategory.create({ data: { name: "Pastries", category_id: categories[2].id, description: "Sweet pastries and baked goods" } }),
+    prisma.subCategory.create({ data: { name: "Scones & Quiches", category_id: categories[4].id, description: "British scones and quiches" } }),
     prisma.subCategory.create({ data: { name: "Green Salads", category_id: categories[4].id, description: "Fresh green salads" } }),
     prisma.subCategory.create({ data: { name: "Fruit Salads", category_id: categories[4].id, description: "Fresh fruit salads" } }),
   ]);
@@ -364,76 +441,177 @@ async function main() {
   // 7. Create Dishes (comprehensive list)
   console.log("🍲 Creating dishes...");
   const dishData = [
-    // Indian dishes
-    { name: "Butter Chicken", cuisine: 0, category: 1, subCategory: 3, price: 45.00, qty: 300, pieces: 1, caterer: 0 },
-    { name: "Chicken Biryani", cuisine: 0, category: 1, subCategory: 5, price: 38.00, qty: 400, pieces: 1, caterer: 0 },
-    { name: "Vegetable Samosa", cuisine: 0, category: 0, subCategory: 1, price: 12.00, qty: null, pieces: 2, caterer: 0 },
-    { name: "Paneer Tikka", cuisine: 0, category: 0, subCategory: 2, price: 28.00, qty: 200, pieces: 4, caterer: 0 },
-    { name: "Dal Makhani", cuisine: 0, category: 1, subCategory: 3, price: 25.00, qty: 250, pieces: 1, caterer: 0 },
-    { name: "Gulab Jamun", cuisine: 0, category: 2, subCategory: 8, price: 15.00, qty: null, pieces: 2, caterer: 0 },
-    { name: "Chicken Curry", cuisine: 0, category: 1, subCategory: 3, price: 42.00, qty: 300, pieces: 1, caterer: 0 },
-    { name: "Naan Bread", cuisine: 0, category: 6, subCategory: null, price: 8.00, qty: null, pieces: 2, caterer: 0 },
+    // Indian Premier Buffet dishes for Jehangir Restaurant (caterer index 0)
+    // Salads (Choose 2) - Price: 5 each
+    { name: "Kachumbari Salad", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: 200, pieces: 1, caterer: 0 },
+    { name: "Fattoush", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: 200, pieces: 1, caterer: 0 },
+    { name: "Mixed Veg. Raitha", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: 200, pieces: 1, caterer: 0 },
+    { name: "Laccha pyaz", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: 150, pieces: 1, caterer: 0 },
+    { name: "Lemon", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: null, pieces: 1, caterer: 0 },
+    { name: "Green Chillies", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: null, pieces: 1, caterer: 0 },
+    { name: "Assorted Poppadum", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: null, pieces: 4, caterer: 0 },
+    { name: "Yoghart Raita", cuisine: 1, category: 4, subCategory: 12, price: 5.00, qty: 200, pieces: 1, caterer: 0 },
+    // Soup - Price: 10 each
+    { name: "Dal Shorba", cuisine: 1, category: 5, subCategory: null, price: 10.00, qty: 250, pieces: 1, caterer: 0 },
+    { name: "Tamatar Dhaniya ka Shorba", cuisine: 1, category: 5, subCategory: null, price: 10.00, qty: 250, pieces: 1, caterer: 0 },
+    // Appetizer - Price: 10 each
+    { name: "Lasooni Murgh Tikka", cuisine: 1, category: 0, subCategory: 1, price: 10.00, qty: 200, pieces: 4, caterer: 0 },
+    { name: "Mutton Seekh Kebab", cuisine: 1, category: 0, subCategory: 1, price: 10.00, qty: 200, pieces: 4, caterer: 0 },
+    // Main Courses (Choose any 3) - Price: 20 each
+    { name: "Murgh Nizami", cuisine: 1, category: 1, subCategory: 4, price: 20.00, qty: 300, pieces: 1, caterer: 0 },
+    { name: "Kali Mirch ka Gosht", cuisine: 1, category: 1, subCategory: 4, price: 20.00, qty: 300, pieces: 1, caterer: 0 },
+    { name: "Subz Kadai", cuisine: 1, category: 1, subCategory: 4, price: 20.00, qty: 300, pieces: 1, caterer: 0 },
+    { name: "Dal Makhani", cuisine: 1, category: 1, subCategory: 4, price: 20.00, qty: 300, pieces: 1, caterer: 0 },
+    { name: "Hyderabadi Murgh Biryani", cuisine: 1, category: 1, subCategory: 6, price: 20.00, qty: 400, pieces: 1, caterer: 0 },
+    // Desserts - Price: 10 each
+    { name: "Gajar Ka Halwa", cuisine: 1, category: 2, subCategory: 9, price: 10.00, qty: 150, pieces: 1, caterer: 0 },
+    { name: "Rasmalai", cuisine: 1, category: 2, subCategory: 9, price: 10.00, qty: 120, pieces: 1, caterer: 0 },
+    { name: "Gulab Jamun", cuisine: 1, category: 2, subCategory: 9, price: 10.00, qty: null, pieces: 2, caterer: 0 },
+    
+    // Other Indian dishes (caterer index shifted to 1)
+    { name: "Butter Chicken", cuisine: 1, category: 1, subCategory: 4, price: 45.00, qty: 300, pieces: 1, caterer: 1 },
+    { name: "Chicken Biryani", cuisine: 1, category: 1, subCategory: 6, price: 38.00, qty: 400, pieces: 1, caterer: 1 },
+    { name: "Vegetable Samosa", cuisine: 1, category: 0, subCategory: 1, price: 12.00, qty: null, pieces: 2, caterer: 1 },
+    { name: "Paneer Tikka", cuisine: 1, category: 0, subCategory: 1, price: 28.00, qty: 200, pieces: 4, caterer: 1 },
+    { name: "Dal Makhani", cuisine: 1, category: 1, subCategory: 4, price: 25.00, qty: 250, pieces: 1, caterer: 1 },
+    { name: "Gulab Jamun", cuisine: 1, category: 2, subCategory: 9, price: 15.00, qty: null, pieces: 2, caterer: 1 },
+    { name: "Chicken Curry", cuisine: 1, category: 1, subCategory: 4, price: 42.00, qty: 300, pieces: 1, caterer: 1 },
+    { name: "Naan Bread", cuisine: 1, category: 6, subCategory: null, price: 8.00, qty: null, pieces: 2, caterer: 1 },
     
     // Arabic dishes
-    { name: "Hummus", cuisine: 1, category: 0, subCategory: 0, price: 18.00, qty: 200, pieces: 1, caterer: 1 },
-    { name: "Chicken Shawarma", cuisine: 1, category: 1, subCategory: 2, price: 32.00, qty: null, pieces: 1, caterer: 1 },
-    { name: "Fattoush Salad", cuisine: 1, category: 4, subCategory: 9, price: 22.00, qty: 250, pieces: 1, caterer: 1 },
-    { name: "Baklava", cuisine: 1, category: 2, subCategory: 8, price: 20.00, qty: null, pieces: 3, caterer: 1 },
-    { name: "Mutton Mandi", cuisine: 1, category: 1, subCategory: 5, price: 55.00, qty: 500, pieces: 1, caterer: 1 },
-    { name: "Tabbouleh", cuisine: 1, category: 4, subCategory: 9, price: 20.00, qty: 200, pieces: 1, caterer: 1 },
-    { name: "Kunafa", cuisine: 1, category: 2, subCategory: 8, price: 25.00, qty: null, pieces: 1, caterer: 1 },
-    { name: "Lamb Kebab", cuisine: 1, category: 1, subCategory: 2, price: 48.00, qty: 300, pieces: 4, caterer: 1 },
+    { name: "Hummus", cuisine: 2, category: 0, subCategory: 0, price: 18.00, qty: 200, pieces: 1, caterer: 2 },
+    { name: "Chicken Shawarma", cuisine: 2, category: 1, subCategory: 3, price: 32.00, qty: null, pieces: 1, caterer: 2 },
+    { name: "Fattoush Salad", cuisine: 2, category: 4, subCategory: 12, price: 22.00, qty: 250, pieces: 1, caterer: 2 },
+    { name: "Baklava", cuisine: 2, category: 2, subCategory: 9, price: 20.00, qty: null, pieces: 3, caterer: 2 },
+    { name: "Mutton Mandi", cuisine: 2, category: 1, subCategory: 6, price: 55.00, qty: 500, pieces: 1, caterer: 2 },
+    { name: "Tabbouleh", cuisine: 2, category: 4, subCategory: 12, price: 20.00, qty: 200, pieces: 1, caterer: 2 },
+    { name: "Kunafa", cuisine: 2, category: 2, subCategory: 9, price: 25.00, qty: null, pieces: 1, caterer: 2 },
+    { name: "Lamb Kebab", cuisine: 2, category: 1, subCategory: 3, price: 48.00, qty: 300, pieces: 4, caterer: 2 },
     
     // Western dishes
-    { name: "Caesar Salad", cuisine: 2, category: 4, subCategory: 9, price: 28.00, qty: 300, pieces: 1, caterer: 2 },
-    { name: "Grilled Chicken Breast", cuisine: 2, category: 1, subCategory: 2, price: 42.00, qty: 250, pieces: 1, caterer: 2 },
-    { name: "Chocolate Cake", cuisine: 2, category: 2, subCategory: 6, price: 35.00, qty: 150, pieces: 1, caterer: 2 },
-    { name: "Beef Steak", cuisine: 2, category: 1, subCategory: 2, price: 65.00, qty: 300, pieces: 1, caterer: 2 },
-    { name: "Fish & Chips", cuisine: 2, category: 1, subCategory: 2, price: 38.00, qty: 350, pieces: 1, caterer: 2 },
-    { name: "Chicken Wings", cuisine: 2, category: 0, subCategory: 1, price: 32.00, qty: null, pieces: 8, caterer: 2 },
-    { name: "Cheesecake", cuisine: 2, category: 2, subCategory: 6, price: 30.00, qty: 120, pieces: 1, caterer: 2 },
+    { name: "Caesar Salad", cuisine: 3, category: 4, subCategory: 12, price: 28.00, qty: 300, pieces: 1, caterer: 3 },
+    { name: "Grilled Chicken Breast", cuisine: 3, category: 1, subCategory: 3, price: 42.00, qty: 250, pieces: 1, caterer: 3 },
+    { name: "Chocolate Cake", cuisine: 3, category: 2, subCategory: 7, price: 35.00, qty: 150, pieces: 1, caterer: 3 },
+    { name: "Beef Steak", cuisine: 3, category: 1, subCategory: 3, price: 65.00, qty: 300, pieces: 1, caterer: 3 },
+    { name: "Fish & Chips", cuisine: 3, category: 1, subCategory: 3, price: 38.00, qty: 350, pieces: 1, caterer: 3 },
+    { name: "Chicken Wings", cuisine: 3, category: 0, subCategory: 1, price: 32.00, qty: null, pieces: 8, caterer: 3 },
+    { name: "Cheesecake", cuisine: 3, category: 2, subCategory: 7, price: 30.00, qty: 120, pieces: 1, caterer: 3 },
     
     // Chinese dishes
-    { name: "Vegetable Spring Rolls", cuisine: 3, category: 0, subCategory: 1, price: 16.00, qty: null, pieces: 4, caterer: 5 },
-    { name: "Chicken Fried Rice", cuisine: 3, category: 1, subCategory: 5, price: 30.00, qty: 350, pieces: 1, caterer: 5 },
-    { name: "Sweet and Sour Chicken", cuisine: 3, category: 1, subCategory: null, price: 35.00, qty: 300, pieces: 1, caterer: 5 },
-    { name: "Chicken Dim Sum", cuisine: 3, category: 0, subCategory: 1, price: 22.00, qty: null, pieces: 6, caterer: 5 },
-    { name: "Beef Noodles", cuisine: 3, category: 1, subCategory: 4, price: 32.00, qty: 400, pieces: 1, caterer: 5 },
-    { name: "Prawn Dumplings", cuisine: 3, category: 0, subCategory: 1, price: 28.00, qty: null, pieces: 4, caterer: 5 },
+    { name: "Vegetable Spring Rolls", cuisine: 4, category: 0, subCategory: 1, price: 16.00, qty: null, pieces: 4, caterer: 6 },
+    { name: "Chicken Fried Rice", cuisine: 4, category: 1, subCategory: 6, price: 30.00, qty: 350, pieces: 1, caterer: 6 },
+    { name: "Sweet and Sour Chicken", cuisine: 4, category: 1, subCategory: null, price: 35.00, qty: 300, pieces: 1, caterer: 6 },
+    { name: "Chicken Dim Sum", cuisine: 4, category: 0, subCategory: 1, price: 22.00, qty: null, pieces: 6, caterer: 6 },
+    { name: "Beef Noodles", cuisine: 4, category: 1, subCategory: 5, price: 32.00, qty: 400, pieces: 1, caterer: 6 },
+    { name: "Prawn Dumplings", cuisine: 4, category: 0, subCategory: 1, price: 28.00, qty: null, pieces: 4, caterer: 6 },
     
     // Italian dishes
-    { name: "Bruschetta", cuisine: 4, category: 0, subCategory: 1, price: 24.00, qty: null, pieces: 4, caterer: 6 },
-    { name: "Spaghetti Carbonara", cuisine: 4, category: 1, subCategory: 4, price: 40.00, qty: 300, pieces: 1, caterer: 6 },
-    { name: "Tiramisu", cuisine: 4, category: 2, subCategory: 8, price: 28.00, qty: 120, pieces: 1, caterer: 6 },
-    { name: "Margherita Pizza", cuisine: 4, category: 1, subCategory: null, price: 35.00, qty: null, pieces: 1, caterer: 6 },
-    { name: "Lasagna", cuisine: 4, category: 1, subCategory: 4, price: 38.00, qty: 350, pieces: 1, caterer: 6 },
-    { name: "Penne Arrabbiata", cuisine: 4, category: 1, subCategory: 4, price: 32.00, qty: 300, pieces: 1, caterer: 6 },
-    { name: "Panna Cotta", cuisine: 4, category: 2, subCategory: 7, price: 22.00, qty: 100, pieces: 1, caterer: 6 },
+    { name: "Bruschetta", cuisine: 5, category: 0, subCategory: 1, price: 24.00, qty: null, pieces: 4, caterer: 7 },
+    { name: "Spaghetti Carbonara", cuisine: 5, category: 1, subCategory: 5, price: 40.00, qty: 300, pieces: 1, caterer: 7 },
+    { name: "Tiramisu", cuisine: 5, category: 2, subCategory: 9, price: 28.00, qty: 120, pieces: 1, caterer: 7 },
+    { name: "Margherita Pizza", cuisine: 5, category: 1, subCategory: null, price: 35.00, qty: null, pieces: 1, caterer: 7 },
+    { name: "Lasagna", cuisine: 5, category: 1, subCategory: 5, price: 38.00, qty: 350, pieces: 1, caterer: 7 },
+    { name: "Penne Arrabbiata", cuisine: 5, category: 1, subCategory: 5, price: 32.00, qty: 300, pieces: 1, caterer: 7 },
+    { name: "Panna Cotta", cuisine: 5, category: 2, subCategory: 8, price: 22.00, qty: 100, pieces: 1, caterer: 7 },
     
     // Mediterranean dishes
-    { name: "Greek Salad", cuisine: 5, category: 4, subCategory: 9, price: 26.00, qty: 280, pieces: 1, caterer: 4 },
-    { name: "Grilled Halloumi", cuisine: 5, category: 1, subCategory: 2, price: 32.00, qty: 200, pieces: 4, caterer: 4 },
-    { name: "Moussaka", cuisine: 5, category: 1, subCategory: null, price: 42.00, qty: 350, pieces: 1, caterer: 4 },
-    { name: "Baba Ganoush", cuisine: 5, category: 0, subCategory: 0, price: 20.00, qty: 200, pieces: 1, caterer: 4 },
-    { name: "Falafel", cuisine: 5, category: 0, subCategory: 1, price: 18.00, qty: null, pieces: 6, caterer: 4 },
+    { name: "Greek Salad", cuisine: 6, category: 4, subCategory: 12, price: 26.00, qty: 280, pieces: 1, caterer: 5 },
+    { name: "Grilled Halloumi", cuisine: 6, category: 1, subCategory: 3, price: 32.00, qty: 200, pieces: 4, caterer: 5 },
+    { name: "Moussaka", cuisine: 6, category: 1, subCategory: null, price: 42.00, qty: 350, pieces: 1, caterer: 5 },
+    { name: "Baba Ganoush", cuisine: 6, category: 0, subCategory: 0, price: 20.00, qty: 200, pieces: 1, caterer: 5 },
+    { name: "Falafel", cuisine: 6, category: 0, subCategory: 1, price: 18.00, qty: null, pieces: 6, caterer: 5 },
     
     // Asian Fusion
-    { name: "Sushi Platter", cuisine: 6, category: 1, subCategory: null, price: 55.00, qty: null, pieces: 12, caterer: 5 },
-    { name: "Thai Green Curry", cuisine: 6, category: 1, subCategory: 3, price: 38.00, qty: 300, pieces: 1, caterer: 5 },
-    { name: "Pad Thai", cuisine: 6, category: 1, subCategory: 4, price: 32.00, qty: 350, pieces: 1, caterer: 5 },
-    { name: "Korean BBQ Beef", cuisine: 6, category: 1, subCategory: 2, price: 48.00, qty: 300, pieces: 1, caterer: 5 },
+    { name: "Sushi Platter", cuisine: 7, category: 1, subCategory: null, price: 55.00, qty: null, pieces: 12, caterer: 6 },
+    { name: "Thai Green Curry", cuisine: 7, category: 1, subCategory: 4, price: 38.00, qty: 300, pieces: 1, caterer: 6 },
+    { name: "Pad Thai", cuisine: 7, category: 1, subCategory: 5, price: 32.00, qty: 350, pieces: 1, caterer: 6 },
+    { name: "Korean BBQ Beef", cuisine: 7, category: 1, subCategory: 3, price: 48.00, qty: 300, pieces: 1, caterer: 6 },
     
     // Seafood
-    { name: "Grilled Salmon", cuisine: 7, category: 1, subCategory: 2, price: 52.00, qty: 300, pieces: 1, caterer: 10 },
-    { name: "Fish Tacos", cuisine: 7, category: 1, subCategory: null, price: 35.00, qty: null, pieces: 3, caterer: 10 },
-    { name: "Lobster Thermidor", cuisine: 7, category: 1, subCategory: null, price: 85.00, qty: 400, pieces: 1, caterer: 10 },
-    { name: "Prawn Biryani", cuisine: 7, category: 1, subCategory: 5, price: 45.00, qty: 400, pieces: 1, caterer: 10 },
-    { name: "Crab Cakes", cuisine: 7, category: 0, subCategory: 1, price: 38.00, qty: null, pieces: 4, caterer: 10 },
+    { name: "Grilled Salmon", cuisine: 8, category: 1, subCategory: 3, price: 52.00, qty: 300, pieces: 1, caterer: 11 },
+    { name: "Fish Tacos", cuisine: 8, category: 1, subCategory: null, price: 35.00, qty: null, pieces: 3, caterer: 11 },
+    { name: "Lobster Thermidor", cuisine: 8, category: 1, subCategory: null, price: 85.00, qty: 400, pieces: 1, caterer: 11 },
+    { name: "Prawn Biryani", cuisine: 8, category: 1, subCategory: 6, price: 45.00, qty: 400, pieces: 1, caterer: 11 },
+    { name: "Crab Cakes", cuisine: 8, category: 0, subCategory: 1, price: 38.00, qty: null, pieces: 4, caterer: 11 },
+    
+    // Arabic Buffet by Abela & Co. (caterer index 13)
+    // Salad (Choose 2)
+    { name: "Hummos", cuisine: 2, category: 4, subCategory: 12, price: 15.00, qty: 200, pieces: 1, caterer: 13 },
+    { name: "Moutable", cuisine: 2, category: 4, subCategory: 12, price: 15.00, qty: 200, pieces: 1, caterer: 13 },
+    { name: "Tabouleh", cuisine: 2, category: 4, subCategory: 12, price: 15.00, qty: 200, pieces: 1, caterer: 13 },
+    { name: "Suffed Baby Marrow Bil Zeit", cuisine: 2, category: 4, subCategory: 12, price: 18.00, qty: 200, pieces: 1, caterer: 13 },
+    { name: "Grilled baby corn salad with feta cheese", cuisine: 2, category: 4, subCategory: 12, price: 20.00, qty: 250, pieces: 1, caterer: 13 },
+    { name: "Sausage & Cabbage Salad", cuisine: 2, category: 4, subCategory: 12, price: 18.00, qty: 200, pieces: 1, caterer: 13 },
+    // Main
+    { name: "Lasagna Verdi", cuisine: 5, category: 1, subCategory: 5, price: 35.00, qty: 300, pieces: 1, caterer: 13 },
+    { name: "Mandi Chicken", cuisine: 2, category: 1, subCategory: 6, price: 45.00, qty: 400, pieces: 1, caterer: 13 },
+    { name: "Chicken Tikka Masala", cuisine: 1, category: 1, subCategory: 4, price: 38.00, qty: 300, pieces: 1, caterer: 13 },
+    { name: "Vegetable Fried Rice", cuisine: 4, category: 1, subCategory: 6, price: 25.00, qty: 350, pieces: 1, caterer: 13 },
+    { name: "Beef Strognaoff", cuisine: 3, category: 1, subCategory: 5, price: 48.00, qty: 300, pieces: 1, caterer: 13 },
+    { name: "Grilled Hamour With Lemo & Butter Sauce", cuisine: 8, category: 1, subCategory: 3, price: 55.00, qty: 300, pieces: 1, caterer: 13 },
+    { name: "Stir Fried Vegetable", cuisine: 4, category: 1, subCategory: null, price: 22.00, qty: 250, pieces: 1, caterer: 13 },
+    { name: "Kobeda Kebab", cuisine: 2, category: 1, subCategory: 3, price: 42.00, qty: 300, pieces: 4, caterer: 13 },
+    // Dessert
+    { name: "Umm Ali", cuisine: 2, category: 2, subCategory: 9, price: 18.00, qty: 150, pieces: 1, caterer: 13 },
+    { name: "Cream Caramel", cuisine: 5, category: 2, subCategory: 9, price: 20.00, qty: 120, pieces: 1, caterer: 13 },
+    { name: "Rasmalai", cuisine: 1, category: 2, subCategory: 9, price: 22.00, qty: 120, pieces: 1, caterer: 13 },
+    { name: "Exotic Fresh Fruit Slices", cuisine: 2, category: 2, subCategory: null, price: 25.00, qty: 300, pieces: 1, caterer: 13 },
+    // Beverages
+    { name: "Assorted Soft Drinks", cuisine: 2, category: 3, subCategory: null, price: 8.00, qty: null, pieces: 1, caterer: 13 },
+    { name: "Mineral Water", cuisine: 2, category: 3, subCategory: null, price: 5.00, qty: null, pieces: 1, caterer: 13 },
+    
+    // The Lime Tree Cafe & Kitchen - Traditional Afternoon Tea (caterer index 14)
+    // Finger Sandwiches (Choose any 3) - Price: 10 each
+    { name: "Egg and Cress", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Tuna and Sweetcorn", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Beef and Horseradish", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Cucumber and Cream Cheese", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Ham and Cheese", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Ham and Mustard", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Smoked Salmon and Cream Cheese", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Cheese and Tomato", cuisine: 3, category: 0, subCategory: 2, price: 10.00, qty: null, pieces: 2, caterer: 14 },
+    // Side Dish (Choose 3) - Price: 15 each
+    { name: "Scones with Clotted Cream and Jam", cuisine: 3, category: 0, subCategory: 10, price: 15.00, qty: null, pieces: 2, caterer: 14 },
+    { name: "Pork Sausage Rolls", cuisine: 3, category: 0, subCategory: 1, price: 15.00, qty: null, pieces: 4, caterer: 14 },
+    { name: "Ham and Leek Quiche", cuisine: 3, category: 0, subCategory: 10, price: 15.00, qty: null, pieces: 1, caterer: 14 },
+    { name: "Broccoli and Asparagus Quiche", cuisine: 3, category: 0, subCategory: 10, price: 15.00, qty: null, pieces: 1, caterer: 14 },
+    // Dessert (Choose 1) - Price: 15 each
+    { name: "Victoria Sponge Cake", cuisine: 3, category: 2, subCategory: 7, price: 15.00, qty: 150, pieces: 1, caterer: 14 },
+    { name: "Chocolate Brownie", cuisine: 3, category: 2, subCategory: 7, price: 15.00, qty: 120, pieces: 1, caterer: 14 },
+    { name: "Battenberg", cuisine: 3, category: 2, subCategory: 9, price: 15.00, qty: null, pieces: 4, caterer: 14 },
+    { name: "Lemon Drizzle Cake", cuisine: 3, category: 2, subCategory: 7, price: 15.00, qty: 150, pieces: 1, caterer: 14 },
+    { name: "Coffee Cake", cuisine: 3, category: 2, subCategory: 7, price: 15.00, qty: 150, pieces: 1, caterer: 14 },
+    // Drinks (Choose 1) - Price: 10 each
+    { name: "Americano / Black Coffee", cuisine: 3, category: 3, subCategory: null, price: 10.00, qty: null, pieces: 1, caterer: 14 },
+    { name: "British High Tea", cuisine: 3, category: 3, subCategory: null, price: 10.00, qty: null, pieces: 1, caterer: 14 },
+    { name: "Green Tea / Camomile / Mint Tea", cuisine: 3, category: 3, subCategory: null, price: 10.00, qty: null, pieces: 1, caterer: 14 },
   ];
 
-  const dishes = [];
+  type DishType = {
+    id: string;
+    name: string;
+    caterer_id: string | null;
+    price: any;
+    category_id: string;
+    pieces?: number | null;
+    quantity_in_gm?: number | null;
+    [key: string]: any; // Allow other properties
+  };
+  
+  const dishes: DishType[] = [];
+  // Organize dishes by caterer for easy access later
+  const dishesByCaterer: { [catererIndex: number]: DishType[] } = {};
+  
   for (let i = 0; i < dishData.length; i++) {
     const d = dishData[i];
+    // Use Indian dishes images for first 18 dishes (Indian Premier Buffet items for Jehangir Restaurant)
+    let imageUrl;
+    if (i < 18 && d.caterer === 0) {
+      imageUrl = UNSplashImages.indianDishes[i % UNSplashImages.indianDishes.length];
+    } else {
+      imageUrl = UNSplashImages.dishes[(i - 18) % UNSplashImages.dishes.length];
+    }
+    
     const dish = await prisma.dish.create({
       data: {
         name: d.name,
@@ -445,10 +623,16 @@ async function main() {
         quantity_in_gm: d.qty,
         pieces: d.pieces,
         is_active: true,
-        image_url: UNSplashImages.dishes[i % UNSplashImages.dishes.length],
+        image_url: imageUrl,
       },
     });
     dishes.push(dish);
+    
+    // Organize by caterer
+    if (!dishesByCaterer[d.caterer]) {
+      dishesByCaterer[d.caterer] = [];
+    }
+    dishesByCaterer[d.caterer].push(dish);
   }
 
   // Link some dishes to free forms
@@ -462,6 +646,18 @@ async function main() {
     { dish: "Caesar Salad", forms: [1] }, // Gluten-Free
     { dish: "Baba Ganoush", forms: [0, 2] },
     { dish: "Tabbouleh", forms: [0, 2] },
+    // Arabic Buffet by Abela & Co. dishes
+    { dish: "Hummos", forms: [0, 2] }, // Vegetarian, Vegan, Halal (assuming Vegan includes vegetarian)
+    { dish: "Moutable", forms: [0, 2] }, // Vegetarian, Vegan, Halal
+    { dish: "Tabouleh", forms: [0, 2] }, // Vegetarian, Vegan, Halal
+    { dish: "Suffed Baby Marrow Bil Zeit", forms: [0, 2] }, // Vegetarian, Vegan, Halal
+    { dish: "Grilled baby corn salad with feta cheese", forms: [2] }, // Vegetarian, Halal (not vegan due to feta)
+    { dish: "Sausage & Cabbage Salad", forms: [2] }, // Halal
+    // The Lime Tree Cafe & Kitchen - Traditional Afternoon Tea dishes
+    { dish: "Egg and Cress", forms: [0, 2] }, // Vegetarian, Vegan
+    { dish: "Cucumber and Cream Cheese", forms: [2] }, // Vegetarian (not vegan due to cream cheese)
+    { dish: "Cheese and Tomato", forms: [2] }, // Vegetarian (not vegan due to cheese)
+    { dish: "Broccoli and Asparagus Quiche", forms: [0, 2] }, // Vegetarian, Vegan (assuming no animal products)
   ];
 
   for (const link of dishFreeFormLinks) {
@@ -528,6 +724,20 @@ async function main() {
     prisma.occassion.create({ data: { name: "Graduation", description: "Graduation ceremonies and celebrations" } }),
     prisma.occassion.create({ data: { name: "Engagement", description: "Engagement parties and celebrations" } }),
     prisma.occassion.create({ data: { name: "Anniversary", description: "Anniversary celebrations" } }),
+    prisma.occassion.create({ 
+      data: { 
+        name: "Arabic Theme Night", 
+        description: "Authentic Arabic buffet experience with traditional Middle Eastern cuisine",
+        image_url: "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop"
+      } 
+    }),
+    prisma.occassion.create({ 
+      data: { 
+        name: "Traditional afternoon tea", 
+        description: "Elegant traditional afternoon tea service with finger sandwiches, scones, and pastries",
+        image_url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop"
+      } 
+    }),
   ]);
 
   // 10. Create Packages for each caterer (3-4 packages per caterer)
@@ -548,11 +758,307 @@ async function main() {
   const allPackages = [];
   for (let catererIndex = 0; catererIndex < caterers.length; catererIndex++) {
     const caterer = caterers[catererIndex];
-    // Each caterer gets 3-4 packages
+    
+    // Special handling for first caterer (Jehangir Restaurant - Indian Premier Buffet)
+    if (catererIndex === 0) {
+      // Create the Indian Premier Buffet package
+      const indianDishes = dishes.slice(0, 18); // First 18 dishes are Indian Premier Buffet
+      const peopleCount = 25;
+      // Price: 2500 for 25 people = 100 per person
+      const pricePerPerson = 100;
+      const totalPrice = pricePerPerson * peopleCount;
+      
+      const indianPackage = await prisma.package.create({
+        data: {
+          name: "Jehangir Restaurant - Indian Premier Buffet",
+          people_count: peopleCount,
+          package_type_id: packageTypes[3].id, // Customizable package type
+          cover_image_url: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+          total_price: totalPrice,
+          caterer_id: caterer.id,
+          rating: 4.9,
+          is_active: true,
+          is_available: true,
+        },
+      });
+      
+      // Add all Indian dishes to the package
+      const packageItems = [];
+      for (const dish of indianDishes) {
+        // Salads and Main Courses are optional selections (Choose 2 salads, Choose 3 main courses)
+        const isOptional = dish.category_id === categories[4].id || dish.category_id === categories[1].id;
+        packageItems.push({
+          package_id: indianPackage.id,
+          caterer_id: caterer.id,
+          dish_id: dish.id,
+          people_count: peopleCount,
+          quantity: dish.pieces || 1,
+          is_optional: isOptional,
+          is_addon: false,
+          price_at_time: dish.price,
+        });
+      }
+      await prisma.packageItem.createMany({ data: packageItems });
+      
+      // Link to Corporate Event or Wedding occasion
+      await prisma.packageOccassion.create({
+        data: {
+          package_id: indianPackage.id,
+          occasion_id: occasions[1].id, // Corporate Event
+        },
+      });
+      
+      // Add category selections for customizable package
+      await prisma.packageCategorySelection.createMany({
+        data: [
+          { package_id: indianPackage.id, category_id: categories[4].id, num_dishes_to_select: 2 }, // Salads: Choose 2
+          { package_id: indianPackage.id, category_id: categories[1].id, num_dishes_to_select: 3 }, // Main Courses: Choose 3
+        ],
+      });
+      
+      allPackages.push(indianPackage);
+      
+      // Add 2-3 more regular packages for this caterer
+      const additionalPackages = Math.floor(Math.random() * 2) + 2; // 2 or 3 packages
+      for (let pkgIndex = 0; pkgIndex < additionalPackages; pkgIndex++) {
+        const template = packageTemplates[(pkgIndex + 1) % packageTemplates.length];
+        const peopleCount = template.people + Math.floor(Math.random() * 50) - 25;
+        const totalPrice = template.price * (peopleCount / template.people);
+        
+        const pkg = await prisma.package.create({
+          data: {
+            name: `${caterer.company_name} - ${template.name}`,
+            people_count: peopleCount,
+            package_type_id: packageTypes[template.type].id,
+            cover_image_url: UNSplashImages.packages[(pkgIndex) % UNSplashImages.packages.length],
+            total_price: totalPrice,
+            caterer_id: caterer.id,
+            rating: template.rating + (Math.random() * 0.3 - 0.15),
+            is_active: true,
+            is_available: true,
+          },
+        });
+        
+        // Get only this caterer's dishes (excluding Indian Premier Buffet dishes which are already used)
+        const catererDishes = dishesByCaterer[0] || [];
+        const availableDishes = catererDishes.filter(d => !indianDishes.find(id => id.id === d.id));
+        
+        // Ensure we have enough dishes
+        if (availableDishes.length === 0) {
+          console.warn(`⚠️  Warning: Caterer ${caterer.company_name} has no additional dishes for package ${pkg.name}`);
+        }
+        
+        // Add dishes to package (only from this caterer, skip Indian Premier Buffet dishes)
+        const numDishes = Math.min(Math.floor(Math.random() * 5) + 6, availableDishes.length);
+        const packageItems = [];
+        const usedDishIds = new Set<string>();
+        
+        // Shuffle available dishes for random selection
+        const shuffledDishes = [...availableDishes].sort(() => Math.random() - 0.5);
+        
+        for (let i = 0; i < numDishes && i < shuffledDishes.length; i++) {
+          const dish = shuffledDishes[i];
+          
+          // Skip if already used
+          if (usedDishIds.has(dish.id)) continue;
+          usedDishIds.add(dish.id);
+          
+          // Double-check dish belongs to this caterer
+          if (dish.caterer_id !== caterer.id) {
+            console.warn(`⚠️  Warning: Dish ${dish.name} does not belong to caterer ${caterer.company_name}`);
+            continue;
+          }
+          
+          const quantity = Math.floor(Math.random() * 20) + 5;
+          const isOptional = Math.random() > 0.7;
+          const isAddon = Math.random() > 0.9;
+          
+          packageItems.push({
+            package_id: pkg.id,
+            caterer_id: caterer.id,
+            dish_id: dish.id,
+            people_count: peopleCount,
+            quantity: quantity,
+            is_optional: isOptional,
+            is_addon: isAddon,
+            price_at_time: dish.price,
+          });
+        }
+        
+        if (packageItems.length === 0) {
+          console.warn(`⚠️  Warning: No dishes added to package ${pkg.name} for caterer ${caterer.company_name}`);
+        } else {
+          await prisma.packageItem.createMany({ data: packageItems });
+        }
+        
+        await prisma.packageOccassion.create({
+          data: {
+            package_id: pkg.id,
+            occasion_id: occasions[template.occasion].id,
+          },
+        });
+        
+        if (template.type === 3) {
+          await prisma.packageCategorySelection.createMany({
+            data: [
+              { package_id: pkg.id, category_id: categories[0].id, num_dishes_to_select: 2 },
+              { package_id: pkg.id, category_id: categories[1].id, num_dishes_to_select: 3 },
+              { package_id: pkg.id, category_id: categories[2].id, num_dishes_to_select: 1 },
+            ],
+          });
+        }
+        
+        allPackages.push(pkg);
+      }
+      continue; // Skip to next caterer
+    }
+    
+    // Special handling for Abela & Co. (caterer index 13) - Arabic Buffet
+    if (catererIndex === 13) {
+      // Get all Abela & Co. dishes
+      const abelaDishes = dishesByCaterer[13] || [];
+      
+      if (abelaDishes.length === 0) {
+        console.warn(`⚠️  Warning: Abela & Co. has no dishes for Arabic Buffet package`);
+        continue;
+      }
+      
+      // Create the Arabic Buffet package
+      const peopleCount = 35;
+      const pricePerPerson = 110;
+      const totalPrice = pricePerPerson * peopleCount;
+      
+      const arabicBuffetPackage = await prisma.package.create({
+        data: {
+          name: "Arabic Buffet by Abela & Co.",
+          people_count: peopleCount,
+          package_type_id: packageTypes[3].id, // Customizable package type
+          cover_image_url: "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop",
+          total_price: totalPrice,
+          caterer_id: caterer.id,
+          rating: 4.8,
+          is_active: true,
+          is_available: true,
+          customisation_type: "CUSTOMISABLE",
+        },
+      });
+      
+      // Add all Abela & Co. dishes to the package
+      const packageItems = [];
+      for (const dish of abelaDishes) {
+        // Salad items are optional selections (Choose 2)
+        const isOptional = dish.category_id === categories[4].id; // Salads category
+        packageItems.push({
+          package_id: arabicBuffetPackage.id,
+          caterer_id: caterer.id,
+          dish_id: dish.id,
+          people_count: peopleCount,
+          quantity: dish.pieces || 1,
+          is_optional: isOptional,
+          is_addon: false,
+          price_at_time: dish.price,
+        });
+      }
+      await prisma.packageItem.createMany({ data: packageItems });
+      
+      // Link to Arabic Theme Night occasion (index 7)
+      await prisma.packageOccassion.create({
+        data: {
+          package_id: arabicBuffetPackage.id,
+          occasion_id: occasions[7].id, // Arabic Theme Night
+        },
+      });
+      
+      // Add category selection for Salads (Choose 2)
+      await prisma.packageCategorySelection.createMany({
+        data: [
+          { package_id: arabicBuffetPackage.id, category_id: categories[4].id, num_dishes_to_select: 2 }, // Salads: Choose 2
+        ],
+      });
+      
+      allPackages.push(arabicBuffetPackage);
+      continue; // Skip to next caterer - no additional packages for Abela & Co.
+    }
+    
+    // Special handling for The Lime Tree Cafe & Kitchen (caterer index 14) - Traditional Afternoon Tea
+    if (catererIndex === 14) {
+      // Get all The Lime Tree Cafe & Kitchen dishes
+      const limeTreeDishes = dishesByCaterer[14] || [];
+      
+      if (limeTreeDishes.length === 0) {
+        console.warn(`⚠️  Warning: The Lime Tree Cafe & Kitchen has no dishes for Traditional Afternoon Tea package`);
+        continue;
+      }
+      
+      // Create the Traditional Afternoon Tea package
+      // Calculate price: Choose 3 sandwiches (10 each) + 3 side dishes (15 each) + 1 dessert (15) + 1 drink (10) = 30 + 45 + 15 + 10 = 100 per person
+      const peopleCount = 25; // Default for afternoon tea
+      const pricePerPerson = 100;
+      const totalPrice = pricePerPerson * peopleCount;
+      
+      const afternoonTeaPackage = await prisma.package.create({
+        data: {
+          name: "The Lime Tree Cafe & Kitchen - Traditional Afternoon Tea",
+          people_count: peopleCount,
+          package_type_id: packageTypes[3].id, // Customizable package type
+          cover_image_url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
+          total_price: totalPrice,
+          caterer_id: caterer.id,
+          rating: 4.8,
+          is_active: true,
+          is_available: true,
+          customisation_type: "CUSTOMISABLE",
+        },
+      });
+      
+      // Add all The Lime Tree Cafe & Kitchen dishes to the package
+      const packageItems = [];
+      for (const dish of limeTreeDishes) {
+        // Finger Sandwiches, Side Dish, Dessert, and Drinks are optional selections
+        const isOptional = dish.category_id === categories[0].id || // Appetizers (Finger Sandwiches and Side Dish)
+                          dish.category_id === categories[2].id || // Desserts
+                          dish.category_id === categories[3].id;   // Beverages (Drinks)
+        
+        packageItems.push({
+          package_id: afternoonTeaPackage.id,
+          caterer_id: caterer.id,
+          dish_id: dish.id,
+          people_count: peopleCount,
+          quantity: dish.pieces || 1,
+          is_optional: isOptional,
+          is_addon: false,
+          price_at_time: dish.price,
+        });
+      }
+      await prisma.packageItem.createMany({ data: packageItems });
+      
+      // Link to Traditional afternoon tea occasion (index 8)
+      await prisma.packageOccassion.create({
+        data: {
+          package_id: afternoonTeaPackage.id,
+          occasion_id: occasions[8].id, // Traditional afternoon tea
+        },
+      });
+      
+      // Add category selections for customizable package
+      // Finger Sandwiches: Choose 3, Side Dish: Choose 3, Dessert: Choose 1, Drinks: Choose 1
+      await prisma.packageCategorySelection.createMany({
+        data: [
+          { package_id: afternoonTeaPackage.id, category_id: categories[0].id, num_dishes_to_select: 6 }, // Appetizers: Choose 6 (3 Finger Sandwiches + 3 Side Dishes)
+          { package_id: afternoonTeaPackage.id, category_id: categories[2].id, num_dishes_to_select: 1 }, // Desserts: Choose 1
+          { package_id: afternoonTeaPackage.id, category_id: categories[3].id, num_dishes_to_select: 1 }, // Beverages: Choose 1
+        ],
+      });
+      
+      allPackages.push(afternoonTeaPackage);
+      continue; // Skip to next caterer - no additional packages for The Lime Tree Cafe & Kitchen
+    }
+    
+    // Each other caterer gets 3-4 packages
     const packagesForCaterer = Math.floor(Math.random() * 2) + 3; // 3 or 4 packages
     
     for (let pkgIndex = 0; pkgIndex < packagesForCaterer; pkgIndex++) {
-      const template = packageTemplates[(catererIndex * 4 + pkgIndex) % packageTemplates.length];
+      const template = packageTemplates[((catererIndex - 1) * 4 + pkgIndex) % packageTemplates.length];
       const peopleCount = template.people + Math.floor(Math.random() * 50) - 25; // Vary by ±25
       const totalPrice = template.price * (peopleCount / template.people); // Scale price
       
@@ -561,7 +1067,7 @@ async function main() {
           name: `${caterer.company_name} - ${template.name}`,
           people_count: peopleCount,
           package_type_id: packageTypes[template.type].id,
-          cover_image_url: UNSplashImages.packages[(catererIndex * 4 + pkgIndex) % UNSplashImages.packages.length],
+          cover_image_url: UNSplashImages.packages[((catererIndex - 1) * 4 + pkgIndex) % UNSplashImages.packages.length],
           total_price: totalPrice,
           caterer_id: caterer.id,
           rating: template.rating + (Math.random() * 0.3 - 0.15), // Vary rating slightly
@@ -570,19 +1076,36 @@ async function main() {
         },
       });
 
-      // Add 6-10 dishes to each package
-      const numDishes = Math.floor(Math.random() * 5) + 6; // 6-10 dishes
-      const packageItems = [];
-      const usedDishIndices = new Set<number>();
+      // Get only this caterer's dishes
+      const catererDishes = dishesByCaterer[catererIndex] || [];
       
-      for (let i = 0; i < numDishes; i++) {
-        let dishIndex;
-        do {
-          dishIndex = Math.floor(Math.random() * dishes.length);
-        } while (usedDishIndices.has(dishIndex));
-        usedDishIndices.add(dishIndex);
+      // Ensure we have enough dishes
+      if (catererDishes.length === 0) {
+        console.warn(`⚠️  Warning: Caterer ${caterer.company_name} has no dishes for package ${pkg.name}`);
+        continue;
+      }
+      
+      // Add 6-10 dishes to each package (only from this caterer)
+      const numDishes = Math.min(Math.floor(Math.random() * 5) + 6, catererDishes.length); // 6-10 dishes, max available
+      const packageItems = [];
+      const usedDishIds = new Set<string>();
+      
+      // Shuffle caterer's dishes for random selection
+      const shuffledDishes = [...catererDishes].sort(() => Math.random() - 0.5);
+      
+      for (let i = 0; i < numDishes && i < shuffledDishes.length; i++) {
+        const dish = shuffledDishes[i];
         
-        const dish = dishes[dishIndex];
+        // Skip if already used
+        if (usedDishIds.has(dish.id)) continue;
+        usedDishIds.add(dish.id);
+        
+        // Double-check dish belongs to this caterer
+        if (dish.caterer_id !== caterer.id) {
+          console.warn(`⚠️  Warning: Dish ${dish.name} does not belong to caterer ${caterer.company_name}`);
+          continue;
+        }
+        
         const quantity = Math.floor(Math.random() * 20) + 5; // 5-25 items
         const isOptional = Math.random() > 0.7; // 30% chance of being optional
         const isAddon = Math.random() > 0.9; // 10% chance of being addon
@@ -599,7 +1122,11 @@ async function main() {
         });
       }
       
-      await prisma.packageItem.createMany({ data: packageItems });
+      if (packageItems.length === 0) {
+        console.warn(`⚠️  Warning: No dishes added to package ${pkg.name} for caterer ${caterer.company_name}`);
+      } else {
+        await prisma.packageItem.createMany({ data: packageItems });
+      }
 
       // Link package to occasions
       await prisma.packageOccassion.create({
@@ -632,7 +1159,7 @@ async function main() {
         first_name: "Sarah",
         last_name: "Johnson",
         phone: "+971504567890",
-        email: "sarah.johnson@email.com",
+        email: "user@partyfud.ae",
         password: hashedPassword,
         type: "USER",
         verified: true,
@@ -654,7 +1181,7 @@ async function main() {
   console.log("✅ Seed completed successfully!");
   console.log("\n📊 Summary:");
   console.log(`   - Admin Users: 1`);
-  console.log(`   - Caterers: ${caterers.length} (all approved)`);
+  console.log(`   - Caterers: ${caterers.length} (all approved, including Jehangir Restaurant with Indian Premier Buffet, Abela & Co. with Arabic Buffet, and The Lime Tree Cafe & Kitchen with Traditional Afternoon Tea)`);
   console.log(`   - Regular Users: 2`);
   console.log(`   - Cuisine Types: ${cuisineTypes.length}`);
   console.log(`   - Categories: ${categories.length}`);
@@ -662,7 +1189,7 @@ async function main() {
   console.log(`   - FreeForms: ${freeForms.length}`);
   console.log(`   - Dishes: ${dishes.length}`);
   console.log(`   - Package Types: ${packageTypes.length}`);
-  console.log(`   - Occasions: ${occasions.length}`);
+  console.log(`   - Occasions: ${occasions.length} (including Arabic Theme Night and Traditional afternoon tea)`);
   console.log(`   - Packages: ${allPackages.length}`);
   console.log(`   - Package Items: ~${allPackages.length * 8} (average 8 per package)`);
 }

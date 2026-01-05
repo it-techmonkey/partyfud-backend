@@ -20,12 +20,13 @@ export const getPackagesByCatererId = async (catererId: string) => {
     throw new Error("Caterer not found or not approved");
   }
 
-  // Get all active and available packages for this caterer
+  // Get all active and available packages for this caterer (only created by CATERER)
   const packages = await prisma.package.findMany({
     where: {
       caterer_id: catererId,
       is_active: true,
       is_available: true,
+      created_by: "CATERER", // Only show packages created by caterers
     },
     include: {
       package_type: true,
@@ -73,6 +74,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
+    customisation_type: pkg.customisation_type,
     items: pkg.items.map((item) => ({
       id: item.id,
       dish: {
@@ -107,6 +109,147 @@ export const getPackagesByCatererId = async (catererId: string) => {
       occasion: {
         id: occ.occassion.id,
         name: occ.occassion.name,
+        image_url: occ.occassion.image_url,
+        description: occ.occassion.description,
+      },
+    })),
+    created_at: pkg.created_at,
+    updated_at: pkg.updated_at,
+  }));
+};
+
+/**
+ * Get packages by occasion name
+ * Filters packages that have the specified occasion
+ */
+export const getPackagesByOccasionName = async (occasionName: string) => {
+  // First, find the occasion by name (case-insensitive)
+  const occasion = await prisma.occassion.findFirst({
+    where: {
+      name: {
+        equals: occasionName,
+        mode: 'insensitive',
+      },
+    },
+  });
+
+  if (!occasion) {
+    throw new Error(`Occasion "${occasionName}" not found`);
+  }
+
+  // Build where clause for packages
+  const packageWhere: any = {
+    is_active: true,
+    is_available: true,
+    created_by: "CATERER", // Only show packages created by caterers
+    caterer: {
+      type: "CATERER",
+      catererinfo: {
+        status: "APPROVED",
+      },
+    },
+    occasions: {
+      some: {
+        occasion_id: occasion.id,
+      },
+    },
+  };
+
+  // Get packages with all relations
+  const packages = await prisma.package.findMany({
+    where: packageWhere,
+    include: {
+      package_type: true,
+      caterer: {
+        include: {
+          catererinfo: true,
+        },
+      },
+      items: {
+        include: {
+          dish: {
+            include: {
+              cuisine_type: true,
+              category: true,
+              sub_category: true,
+            },
+          },
+        },
+      },
+      category_selections: {
+        include: {
+          category: true,
+        },
+      },
+      occasions: {
+        include: {
+          occassion: true,
+        },
+      },
+    },
+    orderBy: {
+      created_at: 'desc',
+    },
+  });
+
+  // Format the response (same format as getAllPackagesWithFilters)
+  return packages.map((pkg) => ({
+    id: pkg.id,
+    name: pkg.name,
+    people_count: pkg.people_count,
+    package_type: {
+      id: pkg.package_type.id,
+      name: pkg.package_type.name,
+      image_url: pkg.package_type.image_url,
+      description: pkg.package_type.description,
+    },
+    cover_image_url: pkg.cover_image_url,
+    total_price: Number(pkg.total_price),
+    price_per_person: Number(pkg.total_price) / pkg.people_count,
+    currency: pkg.currency,
+    rating: pkg.rating,
+    is_available: pkg.is_available,
+    customisation_type: pkg.customisation_type,
+    caterer: {
+      id: pkg.caterer.id,
+      name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
+      location: pkg.caterer.catererinfo?.service_area || pkg.caterer.catererinfo?.region || null,
+    },
+    items: pkg.items.map((item) => ({
+      id: item.id,
+      dish: {
+        id: item.dish.id,
+        name: item.dish.name,
+        image_url: item.dish.image_url,
+        price: Number(item.dish.price),
+        currency: item.dish.currency,
+        quantity_in_gm: item.dish.quantity_in_gm,
+        pieces: item.dish.pieces,
+        cuisine_type: item.dish.cuisine_type.name,
+        category: item.dish.category.name,
+        sub_category: item.dish.sub_category?.name || null,
+      },
+      people_count: item.people_count,
+      quantity: item.quantity,
+      is_optional: item.is_optional,
+      is_addon: item.is_addon,
+      price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
+    })),
+    category_selections: pkg.category_selections.map((selection) => ({
+      id: selection.id,
+      category: {
+        id: selection.category.id,
+        name: selection.category.name,
+        description: selection.category.description,
+      },
+      num_dishes_to_select: selection.num_dishes_to_select,
+    })),
+    occasions: pkg.occasions.map((occ) => ({
+      id: occ.id,
+      occasion: {
+        id: occ.occassion.id,
+        name: occ.occassion.name,
+        image_url: occ.occassion.image_url,
         description: occ.occassion.description,
       },
     })),
@@ -120,21 +263,35 @@ export const getPackagesByCatererId = async (catererId: string) => {
  * Only returns package if it's active, available, and from an approved caterer
  */
 export const getPackageById = async (packageId: string) => {
-  // Get the package with all relations
+  // Get the package with all relations (allow both USER and CATERER created packages)
   const pkg = await prisma.package.findFirst({
     where: {
       id: packageId,
       is_active: true,
       is_available: true,
-      caterer: {
-        type: "CATERER",
-        catererinfo: {
-          status: "APPROVED",
+      // Allow both USER and CATERER created packages
+      OR: [
+        {
+          created_by: "USER",
         },
-      },
+        {
+          created_by: "CATERER",
+          caterer: {
+            type: "CATERER",
+            catererinfo: {
+              status: "APPROVED",
+            },
+          },
+        },
+      ],
     },
     include: {
       package_type: true,
+      caterer: {
+        include: {
+          catererinfo: true,
+        },
+      },
       items: {
         include: {
           dish: {
@@ -180,6 +337,7 @@ export const getPackageById = async (packageId: string) => {
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
+    customisation_type: pkg.customisation_type,
     items: pkg.items.map((item) => ({
       id: item.id,
       dish: {
@@ -214,6 +372,7 @@ export const getPackageById = async (packageId: string) => {
       occasion: {
         id: occ.occassion.id,
         name: occ.occassion.name,
+        image_url: occ.occassion.image_url,
         description: occ.occassion.description,
       },
     })),
@@ -251,6 +410,8 @@ export interface PackageFilters {
   search?: string;
   menu_type?: 'fixed' | 'customizable';
   sort_by?: 'price_asc' | 'price_desc' | 'rating_desc' | 'created_desc';
+  created_by?: 'USER' | 'CATERER'; // Filter by who created the package
+  user_id?: string; // Filter by user ID who created the package
 }
 
 /**
@@ -285,6 +446,19 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
       },
     },
   };
+
+  // Filter by created_by (default to CATERER if not specified)
+  if (filters.created_by) {
+    packageWhere.created_by = filters.created_by;
+  } else {
+    // Default behavior: only show CATERER-created packages
+    packageWhere.created_by = "CATERER";
+  }
+
+  // Filter by user_id (for user-created packages)
+  if (filters.user_id) {
+    packageWhere.user_id = filters.user_id;
+  }
 
   // Filter by caterer_id
   if (filters.caterer_id) {
@@ -376,22 +550,11 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     };
   }
 
-  // Filter by menu type
+  // Filter by menu type using customisation_type
   if (filters.menu_type === 'customizable') {
-    // Customizable means package has optional items or category selections
-    packageWhere.OR = [
-      { items: { some: { is_optional: true } } },
-      { category_selections: { some: {} } },
-    ];
+    packageWhere.customisation_type = 'CUSTOMISABLE';
   } else if (filters.menu_type === 'fixed') {
-    // Fixed means no optional items and no category selections
-    packageWhere.items = {
-      ...(packageWhere.items || {}),
-      none: { is_optional: true },
-    };
-    packageWhere.category_selections = {
-      none: {},
-    };
+    packageWhere.customisation_type = 'FIXED';
   }
 
   // Build orderBy clause
@@ -465,6 +628,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
+    customisation_type: pkg.customisation_type,
     caterer: {
       id: pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
@@ -504,11 +668,377 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
       occasion: {
         id: occ.occassion.id,
         name: occ.occassion.name,
+        image_url: occ.occassion.image_url,
         description: occ.occassion.description,
       },
     })),
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
   }));
+};
+
+/**
+ * Create a custom package for a user
+ * User selects dishes and creates their own package
+ */
+export interface CreateCustomPackageData {
+  name?: string; // Optional, will be auto-generated if not provided
+  dish_ids: string[]; // Array of dish IDs selected by user
+  people_count: number; // Number of people for the package
+  package_type_id?: string; // Optional, will try to find "Custom" or "Customizable" type if not provided
+  quantities?: { [dish_id: string]: number }; // Optional quantities for each dish (default: 1)
+}
+
+export const createCustomPackage = async (
+  userId: string,
+  data: CreateCustomPackageData
+) => {
+  // Validate required fields
+  if (!data.dish_ids || data.dish_ids.length === 0) {
+    throw new Error("At least one dish ID is required");
+  }
+
+  if (!data.people_count || data.people_count <= 0) {
+    throw new Error("people_count must be greater than 0");
+  }
+
+  // Verify user exists
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Fetch all dishes to validate and get their details
+  const dishes = await prisma.dish.findMany({
+    where: {
+      id: { in: data.dish_ids },
+      is_active: true,
+    },
+    include: {
+      caterer: {
+        include: {
+          catererinfo: true,
+        },
+      },
+    },
+  });
+
+  if (dishes.length !== data.dish_ids.length) {
+    throw new Error("Some dishes not found or are inactive");
+  }
+
+  // Check if all dishes are from the same caterer
+  // Filter out null values to get only dishes with caterer_id set
+  const dishesWithCaterer = dishes.filter((dish) => dish.caterer_id);
+  const catererIds = new Set(dishesWithCaterer.map((dish) => dish.caterer_id).filter(Boolean));
+  
+  // If some dishes don't have caterer_id, we need to check if we can infer it
+  const dishesWithoutCaterer = dishes.filter((dish) => !dish.caterer_id);
+  
+  let catererId: string | null = null;
+  
+  if (catererIds.size === 0) {
+    // All dishes lack caterer_id - try to infer from package items if possible
+    // This can happen if dishes were added to packages before caterer_id was required
+    if (dishesWithoutCaterer.length === dishes.length) {
+      // Try to find the caterer_id from package items that reference these dishes
+      const packageItems = await prisma.packageItem.findMany({
+        where: {
+          dish_id: { in: data.dish_ids },
+        },
+        include: {
+          package: {
+            select: {
+              caterer_id: true,
+            },
+          },
+        },
+      });
+      
+      const packageCatererIds = new Set(
+        packageItems
+          .map((item) => item.package?.caterer_id)
+          .filter(Boolean)
+      );
+      
+      if (packageCatererIds.size === 1) {
+        catererId = Array.from(packageCatererIds)[0] as string;
+      } else if (packageCatererIds.size === 0) {
+        throw new Error("All dishes must belong to a caterer. Please ensure all selected dishes have a valid caterer assigned.");
+      } else {
+        throw new Error("All dishes must be from the same caterer");
+      }
+    } else {
+      throw new Error("All dishes must belong to a caterer");
+    }
+  } else if (catererIds.size === 1) {
+    catererId = Array.from(catererIds)[0] as string;
+    
+    // If some dishes don't have caterer_id but others do, check if we can infer it
+    if (dishesWithoutCaterer.length > 0) {
+      // Verify that dishes without caterer_id belong to packages from the same caterer
+      const packageItems = await prisma.packageItem.findMany({
+        where: {
+          dish_id: { in: dishesWithoutCaterer.map((d) => d.id) },
+        },
+        include: {
+          package: {
+            select: {
+              caterer_id: true,
+            },
+          },
+        },
+      });
+      
+      const packageCatererIds = new Set(
+        packageItems
+          .map((item) => item.package?.caterer_id)
+          .filter(Boolean)
+      );
+      
+      // If all dishes without caterer_id are from packages with the same caterer as dishes with caterer_id
+      if (packageCatererIds.size > 0 && Array.from(packageCatererIds)[0] === catererId) {
+        // All good - dishes without caterer_id belong to the same caterer
+      } else if (packageCatererIds.size > 1 || (packageCatererIds.size === 1 && Array.from(packageCatererIds)[0] !== catererId)) {
+        throw new Error("All dishes must be from the same caterer");
+      }
+    }
+  } else {
+    throw new Error("All dishes must be from the same caterer");
+  }
+  
+  if (!catererId) {
+    throw new Error("Unable to determine caterer for selected dishes");
+  }
+
+  // Verify caterer is approved
+  const caterer = await prisma.user.findFirst({
+    where: {
+      id: catererId,
+      type: "CATERER",
+      catererinfo: {
+        status: "APPROVED",
+      },
+    },
+  });
+
+  if (!caterer) {
+    throw new Error("Caterer not found or not approved");
+  }
+
+  // Determine package_type_id
+  let packageTypeId = data.package_type_id;
+
+  if (!packageTypeId) {
+    // Try to find "Custom" or "Customizable" package type
+    const customPackageType = await prisma.packageType.findFirst({
+      where: {
+        name: {
+          in: ["Custom", "Customizable"],
+          mode: "insensitive",
+        },
+      },
+    });
+
+    if (customPackageType) {
+      packageTypeId = customPackageType.id;
+    } else {
+      // If no custom type found, get the first available package type
+      const firstPackageType = await prisma.packageType.findFirst({
+        orderBy: { name: "asc" },
+      });
+
+      if (!firstPackageType) {
+        throw new Error("No package types available");
+      }
+
+      packageTypeId = firstPackageType.id;
+    }
+  } else {
+    // Verify provided package type exists
+    const packageType = await prisma.packageType.findUnique({
+      where: { id: packageTypeId },
+    });
+
+    if (!packageType) {
+      throw new Error("Invalid package type");
+    }
+  }
+
+  // Calculate total price from dishes
+  let totalPrice = 0;
+  const dishQuantities = data.quantities || {};
+
+  dishes.forEach((dish) => {
+    const quantity = dishQuantities[dish.id] || 1;
+    const dishPrice = Number(dish.price);
+    totalPrice += dishPrice * quantity;
+  });
+
+  // Generate package name if not provided
+  const packageName =
+    data.name ||
+    `Custom Package - ${dishes.length} dish${dishes.length > 1 ? "es" : ""} - ${data.people_count} people`;
+
+  // Create the package
+  const packageData = await prisma.package.create({
+    data: {
+      name: packageName,
+      people_count: data.people_count,
+      package_type_id: packageTypeId,
+      cover_image_url: null, // As per requirement
+      total_price: totalPrice,
+      currency: "AED",
+      caterer_id: catererId,
+      user_id: userId, // Store the user ID who created this package
+      created_by: "USER",
+      customisation_type: "CUSTOMISABLE", // User-created packages are always customizable
+      is_active: true,
+      is_available: true,
+    },
+    include: {
+      package_type: true,
+      caterer: {
+        include: {
+          catererinfo: true,
+        },
+      },
+    },
+  });
+
+  // Create package items for each dish
+  await Promise.all(
+    dishes.map(async (dish) => {
+      const quantity = dishQuantities[dish.id] || 1;
+      
+      return await prisma.packageItem.create({
+        data: {
+          package_id: packageData.id,
+          caterer_id: catererId,
+          dish_id: dish.id,
+          people_count: data.people_count,
+          quantity: quantity,
+          is_optional: false,
+          is_addon: false,
+          price_at_time: dish.price, // Store price at creation time
+        },
+        include: {
+          dish: {
+            include: {
+              cuisine_type: true,
+              category: true,
+              sub_category: true,
+            },
+          },
+        },
+      });
+    })
+  );
+
+  // Fetch the complete package with all relations
+  const completePackage = await prisma.package.findUnique({
+    where: { id: packageData.id },
+    include: {
+      package_type: true,
+      caterer: {
+        include: {
+          catererinfo: true,
+        },
+      },
+      items: {
+        include: {
+          dish: {
+            include: {
+              cuisine_type: true,
+              category: true,
+              sub_category: true,
+            },
+          },
+        },
+      },
+      category_selections: {
+        include: {
+          category: true,
+        },
+      },
+      occasions: {
+        include: {
+          occassion: true,
+        },
+      },
+    },
+  });
+
+  if (!completePackage) {
+    throw new Error("Failed to retrieve created package");
+  }
+
+  // Format the response (same format as other package endpoints)
+  return {
+    id: completePackage.id,
+    name: completePackage.name,
+    people_count: completePackage.people_count,
+    package_type: {
+      id: completePackage.package_type.id,
+      name: completePackage.package_type.name,
+      image_url: completePackage.package_type.image_url,
+      description: completePackage.package_type.description,
+    },
+    cover_image_url: completePackage.cover_image_url,
+    total_price: Number(completePackage.total_price),
+    price_per_person: Number(completePackage.total_price) / completePackage.people_count,
+    currency: completePackage.currency,
+    rating: completePackage.rating,
+    is_available: completePackage.is_available,
+    customisation_type: completePackage.customisation_type,
+    caterer: {
+      id: completePackage.caterer.id,
+      name: completePackage.caterer.catererinfo?.business_name || completePackage.caterer.company_name || "Unknown",
+      location: completePackage.caterer.catererinfo?.service_area || completePackage.caterer.catererinfo?.region || null,
+    },
+    items: completePackage.items.map((item) => ({
+      id: item.id,
+      dish: {
+        id: item.dish.id,
+        name: item.dish.name,
+        image_url: item.dish.image_url,
+        price: Number(item.dish.price),
+        currency: item.dish.currency,
+        quantity_in_gm: item.dish.quantity_in_gm,
+        pieces: item.dish.pieces,
+        cuisine_type: item.dish.cuisine_type.name,
+        category: item.dish.category.name,
+        sub_category: item.dish.sub_category?.name || null,
+      },
+      people_count: item.people_count,
+      quantity: item.quantity,
+      is_optional: item.is_optional,
+      is_addon: item.is_addon,
+      price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
+    })),
+    category_selections: completePackage.category_selections.map((selection) => ({
+      id: selection.id,
+      category: {
+        id: selection.category.id,
+        name: selection.category.name,
+        description: selection.category.description,
+      },
+      num_dishes_to_select: selection.num_dishes_to_select,
+    })),
+    occasions: completePackage.occasions.map((occ) => ({
+      id: occ.id,
+      occasion: {
+        id: occ.occassion.id,
+        name: occ.occassion.name,
+        image_url: occ.occassion.image_url,
+        description: occ.occassion.description,
+      },
+    })),
+    created_at: completePackage.created_at,
+    updated_at: completePackage.updated_at,
+  };
 };
 

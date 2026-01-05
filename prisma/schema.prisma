@@ -22,6 +22,7 @@ model User {
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt
   packages          Package[]
+  userCreatedPackages Package[]  @relation("UserCreatedPackages")
   dishes            Dish[]
   package_items     PackageItem[]
   catererinfo       catererinfo?
@@ -161,6 +162,7 @@ model PackageType {
 model Occassion {
   id          String             @id @default(uuid())
   name        String             @unique
+  image_url   String?
   description String?
   created_at  DateTime           @default(now())
   updated_at  DateTime           @updatedAt
@@ -192,9 +194,13 @@ model Package {
   is_active           Boolean                    @default(true)
   is_available        Boolean                    @default(true)
   caterer_id          String
+  user_id             String?                    // ID of the user who created this package (for USER-created packages)
+  created_by          CreatedBy                  @default(CATERER)
+  customisation_type  CustomisationType          @default(FIXED)
   created_at          DateTime                   @default(now())
   updated_at          DateTime                   @updatedAt
   caterer             User                       @relation(fields: [caterer_id], references: [id], onDelete: Cascade)
+  created_by_user     User?                      @relation("UserCreatedPackages", fields: [user_id], references: [id], onDelete: SetNull)
   package_type        PackageType                @relation(fields: [package_type_id], references: [id])
   category_selections PackageCategorySelection[]
   items               PackageItem[]
@@ -202,8 +208,10 @@ model Package {
   cart_items          CartItem[]
   order_items         OrderItem[]
 
+
   @@index([package_type_id])
   @@index([caterer_id])
+  @@index([user_id])
   @@index([is_active])
   @@index([is_available])
 }
@@ -356,4 +364,14 @@ enum ProposalStatus {
   REJECTED // Caterer rejected the proposal
   CANCELLED // User cancelled the proposal
   EXPIRED // Proposal expired (e.g., event date passed)
+}
+
+enum CreatedBy {
+  USER
+  CATERER
+}
+
+enum CustomisationType {
+  FIXED
+  CUSTOMISABLE
 }

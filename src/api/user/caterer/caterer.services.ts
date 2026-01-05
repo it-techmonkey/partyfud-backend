@@ -186,6 +186,35 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
     // });
   }
 
+  // Filter by menu type based on package customisation_type
+  if (menuType) {
+    filteredCaterers = filteredCaterers.filter((caterer) => {
+      if (!caterer.packages || caterer.packages.length === 0) {
+        return false; // Exclude caterers with no packages
+      }
+
+      const hasFixedPackages = caterer.packages.some(
+        (pkg: any) => pkg.customisation_type === 'FIXED'
+      );
+      const hasCustomizablePackages = caterer.packages.some(
+        (pkg: any) => pkg.customisation_type === 'CUSTOMISABLE' || pkg.customisation_type === 'CUSTOMIZABLE'
+      );
+
+      // Check if caterer matches selected menu types
+      if (menuType.fixed && !menuType.customizable && !menuType.liveStations) {
+        return hasFixedPackages;
+      }
+      if (menuType.customizable && !menuType.fixed && !menuType.liveStations) {
+        return hasCustomizablePackages;
+      }
+      if (menuType.fixed && menuType.customizable && !menuType.liveStations) {
+        return hasFixedPackages || hasCustomizablePackages;
+      }
+      // If all are selected or none are selected, return true
+      return true;
+    });
+  }
+
   // Format response with calculated price ranges
   const formattedCaterers = filteredCaterers.map((caterer) => formatCatererData(caterer));
 
@@ -247,6 +276,7 @@ const formatCatererData = (caterer: any) => {
       total_price: Number(pkg.total_price),
       price_per_person: Number(pkg.total_price) / pkg.people_count,
       currency: pkg.currency,
+      customisation_type: pkg.customisation_type,
       rating: pkg.rating,
       cover_image_url: pkg.cover_image_url,
       package_type: pkg.package_type.name,
