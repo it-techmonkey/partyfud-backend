@@ -249,10 +249,36 @@ export const updatePackage = async (
       data: packageData,
     });
   } catch (error: any) {
-    res.status(error.message?.includes("not found") ? 404 : 400).json({
+    console.error('Error updating package:', error);
+    
+    let statusCode = 400;
+    let errorMessage = error.message || 'An error occurred while updating the package';
+    
+    // Handle specific error types with user-friendly messages
+    if (error.message?.includes('not found') || error.message?.includes('permission')) {
+      statusCode = 404;
+      errorMessage = 'Package not found or you do not have permission to edit it';
+    } else if (error.message?.includes('Invalid package type')) {
+      statusCode = 400;
+      errorMessage = 'The selected package type is invalid. Please select a valid type.';
+    } else if (error.code === 'P2003' || error.message?.includes('Foreign key')) {
+      // Prisma foreign key constraint error
+      statusCode = 400;
+      if (error.meta?.field_name?.includes('package_type_id')) {
+        errorMessage = 'The selected package type is invalid. Please select a valid type.';
+      } else {
+        errorMessage = 'Unable to update package due to invalid data. Please check all fields.';
+      }
+    } else if (error.code === 'P2002') {
+      // Prisma unique constraint error
+      statusCode = 409;
+      errorMessage = 'A package with this name already exists.';
+    }
+    
+    res.status(statusCode).json({
       success: false,
       error: {
-        message: error.message || "An error occurred",
+        message: errorMessage,
       },
     });
   }
