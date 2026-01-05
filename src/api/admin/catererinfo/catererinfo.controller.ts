@@ -42,6 +42,7 @@ export const getCatererInfoList = async (
     console.log('🔵 [GET CATERER INFO] Fetching caterer info with filters:', filters);
     const catererInfoList = await getAllCatererInfo(filters);
     console.log('✅ [GET CATERER INFO] Found', catererInfoList.length, 'caterer info records');
+    console.log('✅ [GET CATERER INFO] Sample cuisines:', catererInfoList.slice(0, 3).map(c => ({ name: c.business_name, cuisines: c.cuisines })));
 
     res.status(200).json({
       success: true,
