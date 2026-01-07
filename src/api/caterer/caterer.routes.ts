@@ -6,6 +6,7 @@ import metadataRoutes from "./metadata.routes";
 import dashboardRoutes from "./dashboard/dashboard.routes";
 import proposalRoutes from "./proposal/proposal.routes";
 import ordersRoutes from "./orders/orders.routes";
+import infoRoutes from "./info/info.routes";
 
 const router = Router();
 
@@ -29,5 +30,8 @@ router.use("/proposals", proposalRoutes);
 
 // Mount order routes at /orders
 router.use("/orders", ordersRoutes);
+
+// Mount info routes at /info
+router.use("/info", infoRoutes);
 
 export default router;

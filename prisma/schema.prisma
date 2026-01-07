@@ -46,6 +46,7 @@ model catererinfo {
   full_service         Boolean  @default(true)
   staff                Int?
   servers              Int?
+  preparation_time     Int?
   food_license         String?
   Registration         String?
   caterer_id           String   @unique
