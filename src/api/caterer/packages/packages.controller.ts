@@ -111,6 +111,7 @@ export const createPackage = async (
       customisation_type,
       package_item_ids, // Array of package item IDs to link
       category_selections, // Array of { category_id, num_dishes_to_select }
+      occassion, // Array of occasion IDs
     } = req.body;
 
     // Convert FormData string values to proper types
@@ -146,6 +147,23 @@ export const createPackage = async (
       } else if (typeof package_item_ids === 'string') {
         // Handle comma-separated string
         parsedPackageItemIds = package_item_ids.split(',').map(id => id.trim()).filter(id => id);
+      }
+    }
+
+    // Parse occassion (can be string or array from FormData)
+    let parsedOccasions: string[] | undefined;
+    if (occassion !== undefined) {
+      if (Array.isArray(occassion)) {
+        parsedOccasions = occassion;
+      } else if (typeof occassion === 'string') {
+        try {
+          const parsed = JSON.parse(occassion);
+          if (Array.isArray(parsed)) {
+            parsedOccasions = parsed;
+          }
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
       }
     }
 
@@ -209,6 +227,7 @@ export const createPackage = async (
       customisation_type: parsedCustomisationType,
       package_item_ids: parsedPackageItemIds, // Pass item IDs to link
       category_selections: parsedCategorySelections, // Pass category selections
+      occassion: parsedOccasions, // Pass occasions
     });
 
     res.status(201).json({
@@ -267,7 +286,49 @@ export const updatePackage = async (
       is_available,
       customisation_type,
       category_selections,
+      occassion,
+      package_item_ids,
     } = req.body;
+
+    // Parse occassion
+    let parsedOccasions: string[] | undefined;
+    if (occassion !== undefined) {
+      if (Array.isArray(occassion)) {
+        parsedOccasions = occassion;
+      } else if (typeof occassion === 'string') {
+        try {
+          const parsed = JSON.parse(occassion);
+          if (Array.isArray(parsed)) {
+            parsedOccasions = parsed;
+          }
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
+      }
+    }
+
+    // Parse package_item_ids
+    let parsedPackageItemIds: string[] | undefined;
+    if (package_item_ids !== undefined) {
+      if (Array.isArray(package_item_ids)) {
+        parsedPackageItemIds = package_item_ids;
+      } else if (typeof package_item_ids === 'string') {
+        // Could be comma-separated or JSON
+        if (package_item_ids.trim().startsWith('[')) {
+          try {
+            const parsed = JSON.parse(package_item_ids);
+            if (Array.isArray(parsed)) {
+              parsedPackageItemIds = parsed;
+            }
+          } catch (e) {
+            // Invalid JSON, try comma-separated
+            parsedPackageItemIds = package_item_ids.split(',').map(id => id.trim()).filter(Boolean);
+          }
+        } else {
+          parsedPackageItemIds = package_item_ids.split(',').map(id => id.trim()).filter(Boolean);
+        }
+      }
+    }
 
     // Parse customisation_type
     const parsedCustomisationType = customisation_type === "CUSTOMISABLE" ? "CUSTOMISABLE" : undefined;
@@ -309,16 +370,18 @@ export const updatePackage = async (
       catererId,
       {
         name,
-        people_count,
+        people_count: people_count !== undefined ? parseInt(people_count, 10) : undefined,
         package_type_id,
         cover_image_url,
-        total_price,
+        total_price: total_price !== undefined ? parseFloat(total_price) : undefined,
         currency,
-        rating,
-        is_active,
-        is_available,
+        rating: rating !== undefined ? parseFloat(rating) : undefined,
+        is_active: is_active !== undefined ? is_active === 'true' || is_active === true : undefined,
+        is_available: is_available !== undefined ? is_available === 'true' || is_available === true : undefined,
         customisation_type: parsedCustomisationType,
         category_selections: parsedCategorySelections,
+        occassion: parsedOccasions,
+        package_item_ids: parsedPackageItemIds,
       }
     );
 
@@ -353,6 +416,44 @@ export const updatePackage = async (
       errorMessage = 'A package with this name already exists.';
     }
     
+    res.status(statusCode).json({
+      success: false,
+      error: {
+        message: errorMessage,
+      },
+    });
+  }
+};
+
+/**
+ * Delete a package
+ * DELETE /api/caterer/packages/:id
+ */
+export const deletePackage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    const catererId = user.userId;
+    const packageId = req.params.id;
+
+    await packagesService.deletePackage(packageId, catererId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Package deleted successfully',
+    });
+  } catch (error: any) {
+    let statusCode = 500;
+    let errorMessage = error.message || 'An error occurred while deleting the package';
+
+    if (error.message?.includes('not found') || error.message?.includes('permission')) {
+      statusCode = 404;
+      errorMessage = 'Package not found or you do not have permission to delete it';
+    }
+
     res.status(statusCode).json({
       success: false,
       error: {
