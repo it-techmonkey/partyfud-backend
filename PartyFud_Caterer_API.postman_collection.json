@@ -1,0 +1,1073 @@
+{
+	"info": {
+		"_postman_id": "partyfud-caterer-api-collection",
+		"name": "PartyFud Caterer API",
+		"description": "Complete API collection for PartyFud Backend - All Caterer endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "dashboard"]
+						},
+						"description": "Get dashboard statistics for the authenticated caterer"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Dishes",
+			"item": [
+				{
+					"name": "Get All Dishes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/dishes?cuisine_type_id=&category_id=&group_by_category=false",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "dishes"],
+							"query": [
+								{
+									"key": "cuisine_type_id",
+									"value": "",
+									"description": "Optional: Filter by cuisine type ID"
+								},
+								{
+									"key": "category_id",
+									"value": "",
+									"description": "Optional: Filter by category ID"
+								},
+								{
+									"key": "group_by_category",
+									"value": "false",
+									"description": "Optional: Group dishes by category (true/false)"
+								}
+							]
+						},
+						"description": "Get all dishes for the authenticated caterer. Supports filtering by cuisine_type_id and category_id. Can group results by category."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Dish by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/dishes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "dishes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Dish ID"
+								}
+							]
+						},
+						"description": "Get a single dish by ID for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Dish",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Biryani",
+									"type": "text"
+								},
+								{
+									"key": "cuisine_type_id",
+									"value": "",
+									"type": "text",
+									"description": "Required: Cuisine type ID"
+								},
+								{
+									"key": "category_id",
+									"value": "",
+									"type": "text",
+									"description": "Required: Category ID"
+								},
+								{
+									"key": "sub_category_id",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Sub category ID (required if category has subcategories)"
+								},
+								{
+									"key": "quantity_in_gm",
+									"value": "500",
+									"type": "text",
+									"description": "Optional: Quantity in grams"
+								},
+								{
+									"key": "pieces",
+									"value": "1",
+									"type": "text",
+									"description": "Optional: Number of pieces (default: 1)"
+								},
+								{
+									"key": "price",
+									"value": "50.00",
+									"type": "text",
+									"description": "Required: Price"
+								},
+								{
+									"key": "currency",
+									"value": "AED",
+									"type": "text",
+									"description": "Optional: Currency (default: AED)"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text",
+									"description": "Optional: Is dish active (default: true)"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": [],
+									"description": "Optional: Dish image file"
+								},
+								{
+									"key": "image_url",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Dish image URL (alternative to file upload)"
+								},
+								{
+									"key": "freeform_ids",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Comma-separated list of freeform IDs"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/dishes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "dishes"]
+						},
+						"description": "Create a new dish. Supports file upload for image or image_url. Required fields: name, cuisine_type_id, category_id, price."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Dish",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Updated Biryani",
+									"type": "text",
+									"description": "Optional: Dish name"
+								},
+								{
+									"key": "cuisine_type_id",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Cuisine type ID"
+								},
+								{
+									"key": "category_id",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Category ID"
+								},
+								{
+									"key": "sub_category_id",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Sub category ID"
+								},
+								{
+									"key": "quantity_in_gm",
+									"value": "600",
+									"type": "text",
+									"description": "Optional: Quantity in grams"
+								},
+								{
+									"key": "pieces",
+									"value": "2",
+									"type": "text",
+									"description": "Optional: Number of pieces"
+								},
+								{
+									"key": "price",
+									"value": "60.00",
+									"type": "text",
+									"description": "Optional: Price"
+								},
+								{
+									"key": "currency",
+									"value": "AED",
+									"type": "text",
+									"description": "Optional: Currency"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text",
+									"description": "Optional: Is dish active"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": [],
+									"description": "Optional: Dish image file"
+								},
+								{
+									"key": "image_url",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Dish image URL (alternative to file upload)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/dishes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "dishes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Dish ID"
+								}
+							]
+						},
+						"description": "Update an existing dish. All fields are optional. Supports file upload for image or image_url."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Dish",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/dishes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "dishes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Dish ID"
+								}
+							]
+						},
+						"description": "Delete a dish by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Packages",
+			"item": [
+				{
+					"name": "Get All Packages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						},
+						"description": "Get all packages for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Package by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Package ID"
+								}
+							]
+						},
+						"description": "Get a single package by ID for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Wedding Package",
+									"type": "text",
+									"description": "Required: Package name"
+								},
+								{
+									"key": "people_count",
+									"value": "50",
+									"type": "text",
+									"description": "Required: Number of people"
+								},
+								{
+									"key": "package_type_id",
+									"value": "",
+									"type": "text",
+									"description": "Required: Package type ID"
+								},
+								{
+									"key": "total_price",
+									"value": "5000.00",
+									"type": "text",
+									"description": "Required: Total price"
+								},
+								{
+									"key": "currency",
+									"value": "AED",
+									"type": "text",
+									"description": "Optional: Currency (default: AED)"
+								},
+								{
+									"key": "rating",
+									"value": "4.5",
+									"type": "text",
+									"description": "Optional: Rating"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text",
+									"description": "Optional: Is package active"
+								},
+								{
+									"key": "is_available",
+									"value": "true",
+									"type": "text",
+									"description": "Optional: Is package available"
+								},
+								{
+									"key": "cover_image",
+									"type": "file",
+									"src": [],
+									"description": "Optional: Cover image file"
+								},
+								{
+									"key": "cover_image_url",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Cover image URL (alternative to file upload)"
+								},
+								{
+									"key": "package_item_ids",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Comma-separated list of package item IDs to link"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages"]
+						},
+						"description": "Create a new package. Supports file upload for cover image or cover_image_url. Required fields: name, people_count, package_type_id, total_price. Can optionally link package items during creation."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Package",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Updated Wedding Package",
+									"type": "text",
+									"description": "Optional: Package name"
+								},
+								{
+									"key": "people_count",
+									"value": "60",
+									"type": "text",
+									"description": "Optional: Number of people"
+								},
+								{
+									"key": "package_type_id",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Package type ID"
+								},
+								{
+									"key": "total_price",
+									"value": "6000.00",
+									"type": "text",
+									"description": "Optional: Total price"
+								},
+								{
+									"key": "currency",
+									"value": "AED",
+									"type": "text",
+									"description": "Optional: Currency"
+								},
+								{
+									"key": "rating",
+									"value": "4.8",
+									"type": "text",
+									"description": "Optional: Rating"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text",
+									"description": "Optional: Is package active"
+								},
+								{
+									"key": "is_available",
+									"value": "true",
+									"type": "text",
+									"description": "Optional: Is package available"
+								},
+								{
+									"key": "cover_image",
+									"type": "file",
+									"src": [],
+									"description": "Optional: Cover image file"
+								},
+								{
+									"key": "cover_image_url",
+									"value": "",
+									"type": "text",
+									"description": "Optional: Cover image URL (alternative to file upload)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Package ID"
+								}
+							]
+						},
+						"description": "Update an existing package. All fields are optional. Supports file upload for cover image or cover_image_url."
+					},
+					"response": []
+				},
+				{
+					"name": "Link Package Items to Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"item_ids\": [\n    \"item-id-1\",\n    \"item-id-2\",\n    \"item-id-3\"\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/:id/items/link",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", ":id", "items", "link"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Package ID"
+								}
+							]
+						},
+						"description": "Link package items to a package. Requires an array of package item IDs in the request body."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Package Items",
+			"item": [
+				{
+					"name": "Get All Package Items",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items?draft=false",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items"],
+							"query": [
+								{
+									"key": "draft",
+									"value": "false",
+									"description": "Optional: Filter only draft items without package_id (true/false)"
+								}
+							]
+						},
+						"description": "Get all package items for the authenticated caterer. Use draft=true to filter only draft items (items without package_id)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Package Item by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Package Item ID"
+								}
+							]
+						},
+						"description": "Get a single package item by ID for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Package Item",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dish_id\": \"dish-id-here\",\n  \"people_count\": 50,\n  \"quantity\": 1,\n  \"price_at_time\": 50.00,\n  \"is_optional\": false,\n  \"is_addon\": false,\n  \"package_id\": null\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items"]
+						},
+						"description": "Create a new package item. Required fields: dish_id, people_count. package_id can be null for draft items."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Package Item",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dish_id\": \"dish-id-here\",\n  \"people_count\": 60,\n  \"quantity\": 2,\n  \"price_at_time\": 60.00,\n  \"is_optional\": true,\n  \"is_addon\": false,\n  \"package_id\": \"package-id-here\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Package Item ID"
+								}
+							]
+						},
+						"description": "Update an existing package item. All fields are optional."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Package Item",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/packages/items/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "packages", "items", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Package Item ID"
+								}
+							]
+						},
+						"description": "Delete a package item by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Metadata",
+			"item": [
+				{
+					"name": "Get Cuisine Types",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/metadata/cuisine-types",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "metadata", "cuisine-types"]
+						},
+						"description": "Get all cuisine types"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Categories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/metadata/categories",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "metadata", "categories"]
+						},
+						"description": "Get all categories"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subcategories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/metadata/subcategories?category_id=",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "metadata", "subcategories"],
+							"query": [
+								{
+									"key": "category_id",
+									"value": "",
+									"description": "Optional: Filter by category ID"
+								}
+							]
+						},
+						"description": "Get all subcategories. Optionally filter by category_id."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Free Forms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/metadata/freeforms",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "metadata", "freeforms"]
+						},
+						"description": "Get all free forms"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Package Types",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/metadata/package-types",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "metadata", "package-types"]
+						},
+						"description": "Get all package types"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Get All Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/orders",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "orders"]
+						},
+						"description": "Get all orders for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/orders/:orderId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "orders", ":orderId"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "",
+									"description": "Order ID"
+								}
+							]
+						},
+						"description": "Get a single order by ID for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"CONFIRMED\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/orders/:orderId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "orders", ":orderId"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "",
+									"description": "Order ID"
+								}
+							]
+						},
+						"description": "Update order status. Valid statuses: PENDING, CONFIRMED, PAID, PREPARING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Proposals",
+			"item": [
+				{
+					"name": "Get All Proposals",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/proposals",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "proposals"]
+						},
+						"description": "Get all proposals for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Proposal by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/caterer/proposals/:proposalId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "proposals", ":proposalId"],
+							"variable": [
+								{
+									"key": "proposalId",
+									"value": "",
+									"description": "Proposal ID"
+								}
+							]
+						},
+						"description": "Get a single proposal by ID for the authenticated caterer"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Proposal Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"QUOTED\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/caterer/proposals/:proposalId/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "caterer", "proposals", ":proposalId", "status"],
+							"variable": [
+								{
+									"key": "proposalId",
+									"value": "",
+									"description": "Proposal ID"
+								}
+							]
+						},
+						"description": "Update proposal status. Valid statuses: PENDING, PROCESSING, QUOTED, ACCEPTED, REJECTED, CANCELLED, EXPIRED"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

@@ -23,7 +23,16 @@ export const getDashboard = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Error fetching dashboard stats:", error);
-    return res.status(500).json({
+    
+    // Return 403 for authorization errors (user not a caterer), 404 for not found, 500 for other errors
+    let statusCode = 500;
+    if (error.message?.includes("not found")) {
+      statusCode = 404;
+    } else if (error.message?.includes("not a caterer") || error.message?.includes("Invalid caterer")) {
+      statusCode = 403;
+    }
+    
+    return res.status(statusCode).json({
       success: false,
       error: { message: error.message || "Failed to fetch dashboard statistics" },
     });
