@@ -787,6 +787,7 @@ async function main() {
           rating: 4.9,
           is_active: true,
           is_available: true,
+          customisation_type: "FIXED", // FIXED package with category selection limits
         },
       });
 
@@ -816,11 +817,14 @@ async function main() {
         },
       });
 
-      // Add category selections for customizable package
+      // Add category selections for FIXED package (only FIXED packages have category limits)
       await prisma.packageCategorySelection.createMany({
         data: [
           { package_id: indianPackage.id, category_id: categories[4].id, num_dishes_to_select: 2 }, // Salads: Choose 2
           { package_id: indianPackage.id, category_id: categories[1].id, num_dishes_to_select: 3 }, // Main Courses: Choose 3
+          { package_id: indianPackage.id, category_id: categories[0].id, num_dishes_to_select: 1 }, // Appetizers: Choose 1
+          { package_id: indianPackage.id, category_id: categories[5].id, num_dishes_to_select: 1 }, // Soups: Choose 1
+          { package_id: indianPackage.id, category_id: categories[2].id, num_dishes_to_select: 1 }, // Desserts: Choose 1
         ],
       });
 
@@ -833,6 +837,11 @@ async function main() {
         const peopleCount = template.people + Math.floor(Math.random() * 50) - 25;
         const totalPrice = template.price * (peopleCount / template.people);
 
+        // Determine customisation type based on package type
+        // template.type === 3 means "Customizable" package type, but we want it to be CUSTOMISABLE customisation_type
+        // Other package types should be FIXED
+        const customisationType = template.type === 3 ? "CUSTOMISABLE" : "FIXED";
+
         const pkg = await prisma.package.create({
           data: {
             name: `${caterer.company_name} - ${template.name}`,
@@ -844,6 +853,7 @@ async function main() {
             rating: template.rating + (Math.random() * 0.3 - 0.15),
             is_active: true,
             is_available: true,
+            customisation_type: customisationType,
           },
         });
 
@@ -906,14 +916,23 @@ async function main() {
           },
         });
 
-        if (template.type === 3) {
-          await prisma.packageCategorySelection.createMany({
-            data: [
-              { package_id: pkg.id, category_id: categories[0].id, num_dishes_to_select: 2 },
-              { package_id: pkg.id, category_id: categories[1].id, num_dishes_to_select: 3 },
-              { package_id: pkg.id, category_id: categories[2].id, num_dishes_to_select: 1 },
-            ],
-          });
+        // Only add category selections for FIXED packages (not CUSTOMISABLE)
+        // CUSTOMISABLE packages allow unlimited selection, so no limits needed
+        if (customisationType === "FIXED" && Math.random() > 0.5) {
+          // Randomly add category selections to some FIXED packages to demonstrate the feature
+          const selections = [];
+          if (Math.random() > 0.3) {
+            selections.push({ package_id: pkg.id, category_id: categories[0].id, num_dishes_to_select: Math.floor(Math.random() * 2) + 1 }); // Appetizers: 1-2
+          }
+          if (Math.random() > 0.3) {
+            selections.push({ package_id: pkg.id, category_id: categories[1].id, num_dishes_to_select: Math.floor(Math.random() * 2) + 1 }); // Main Course: 1-2
+          }
+          if (Math.random() > 0.3) {
+            selections.push({ package_id: pkg.id, category_id: categories[2].id, num_dishes_to_select: 1 }); // Desserts: 1
+          }
+          if (selections.length > 0) {
+            await prisma.packageCategorySelection.createMany({ data: selections });
+          }
         }
 
         allPackages.push(pkg);
@@ -977,12 +996,8 @@ async function main() {
         },
       });
 
-      // Add category selection for Salads (Choose 2)
-      await prisma.packageCategorySelection.createMany({
-        data: [
-          { package_id: arabicBuffetPackage.id, category_id: categories[4].id, num_dishes_to_select: 2 }, // Salads: Choose 2
-        ],
-      });
+      // CUSTOMISABLE packages don't have category selection limits - users can select unlimited items
+      // No category selections needed for CUSTOMISABLE packages
 
       allPackages.push(arabicBuffetPackage);
       continue; // Skip to next caterer - no additional packages for Abela & Co.
@@ -1048,15 +1063,8 @@ async function main() {
         },
       });
 
-      // Add category selections for customizable package
-      // Finger Sandwiches: Choose 3, Side Dish: Choose 3, Dessert: Choose 1, Drinks: Choose 1
-      await prisma.packageCategorySelection.createMany({
-        data: [
-          { package_id: afternoonTeaPackage.id, category_id: categories[0].id, num_dishes_to_select: 6 }, // Appetizers: Choose 6 (3 Finger Sandwiches + 3 Side Dishes)
-          { package_id: afternoonTeaPackage.id, category_id: categories[2].id, num_dishes_to_select: 1 }, // Desserts: Choose 1
-          { package_id: afternoonTeaPackage.id, category_id: categories[3].id, num_dishes_to_select: 1 }, // Beverages: Choose 1
-        ],
-      });
+      // CUSTOMISABLE packages don't have category selection limits - users can select unlimited items
+      // No category selections needed for CUSTOMISABLE packages
 
       allPackages.push(afternoonTeaPackage);
       continue; // Skip to next caterer - no additional packages for The Lime Tree Cafe & Kitchen
@@ -1070,6 +1078,11 @@ async function main() {
       const peopleCount = template.people + Math.floor(Math.random() * 50) - 25; // Vary by ±25
       const totalPrice = template.price * (peopleCount / template.people); // Scale price
 
+      // Determine customisation type based on package type
+      // template.type === 3 means "Customizable" package type, should be CUSTOMISABLE customisation_type
+      // Other package types should be FIXED
+      const customisationType = template.type === 3 ? "CUSTOMISABLE" : "FIXED";
+
       const pkg = await prisma.package.create({
         data: {
           name: `${caterer.company_name} - ${template.name}`,
@@ -1081,6 +1094,7 @@ async function main() {
           rating: template.rating + (Math.random() * 0.3 - 0.15), // Vary rating slightly
           is_active: true,
           is_available: true,
+          customisation_type: customisationType,
         },
       });
 
@@ -1144,15 +1158,23 @@ async function main() {
         },
       });
 
-      // If it's a customizable package, add category selections
-      if (template.type === 3) {
-        await prisma.packageCategorySelection.createMany({
-          data: [
-            { package_id: pkg.id, category_id: categories[0].id, num_dishes_to_select: 2 }, // Appetizers: 2
-            { package_id: pkg.id, category_id: categories[1].id, num_dishes_to_select: 3 }, // Main Course: 3
-            { package_id: pkg.id, category_id: categories[2].id, num_dishes_to_select: 1 }, // Desserts: 1
-          ],
-        });
+      // Only add category selections for FIXED packages (not CUSTOMISABLE)
+      // CUSTOMISABLE packages allow unlimited selection, so no limits needed
+      if (customisationType === "FIXED" && Math.random() > 0.5) {
+        // Randomly add category selections to some FIXED packages to demonstrate the feature
+        const selections = [];
+        if (Math.random() > 0.3) {
+          selections.push({ package_id: pkg.id, category_id: categories[0].id, num_dishes_to_select: Math.floor(Math.random() * 2) + 1 }); // Appetizers: 1-2
+        }
+        if (Math.random() > 0.3) {
+          selections.push({ package_id: pkg.id, category_id: categories[1].id, num_dishes_to_select: Math.floor(Math.random() * 2) + 1 }); // Main Course: 1-2
+        }
+        if (Math.random() > 0.3) {
+          selections.push({ package_id: pkg.id, category_id: categories[2].id, num_dishes_to_select: 1 }); // Desserts: 1
+        }
+        if (selections.length > 0) {
+          await prisma.packageCategorySelection.createMany({ data: selections });
+        }
       }
 
       allPackages.push(pkg);
