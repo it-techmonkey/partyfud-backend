@@ -166,6 +166,7 @@ export interface CatererInfoData {
   service_area?: string;
   minimum_guests?: number;
   maximum_guests?: number;
+  preparation_time?: number;
   region?: string;
   delivery_only?: boolean;
   delivery_plus_setup?: boolean;
@@ -216,6 +217,7 @@ export const createCatererInfo = async (data: CatererInfoData) => {
       service_area: data.service_area,
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
+      preparation_time: data.preparation_time,
       region: data.region,
       delivery_only: data.delivery_only ?? true,
       delivery_plus_setup: data.delivery_plus_setup ?? true,
@@ -255,6 +257,7 @@ export const updateCatererInfo = async (data: CatererInfoData) => {
   if (data.service_area !== undefined) updateData.service_area = data.service_area;
   if (data.minimum_guests !== undefined) updateData.minimum_guests = data.minimum_guests;
   if (data.maximum_guests !== undefined) updateData.maximum_guests = data.maximum_guests;
+  if (data.preparation_time !== undefined) updateData.preparation_time = data.preparation_time;
   if (data.region !== undefined) updateData.region = data.region;
   if (data.delivery_only !== undefined) updateData.delivery_only = data.delivery_only;
   if (data.delivery_plus_setup !== undefined) updateData.delivery_plus_setup = data.delivery_plus_setup;

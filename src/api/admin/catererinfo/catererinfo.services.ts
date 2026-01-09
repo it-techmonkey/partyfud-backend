@@ -58,7 +58,36 @@ export const getAllCatererInfo = async (filters?: CatererInfoFilters) => {
     },
   });
 
-  return catererInfoList;
+  // Fetch packages for each caterer to derive cuisines
+  const catererInfoWithCuisines = await Promise.all(
+    catererInfoList.map(async (info) => {
+      // Get dishes created by this caterer to extract cuisines
+      const dishes = await prisma.dish.findMany({
+        where: { caterer_id: info.caterer_id },
+        include: {
+          cuisine_type: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Extract unique cuisine type names
+      const cuisines = [...new Set(
+        dishes
+          .filter((dish) => dish.cuisine_type)
+          .map((dish) => dish.cuisine_type!.name)
+      )];
+
+      return {
+        ...info,
+        cuisines,
+      };
+    })
+  );
+
+  return catererInfoWithCuisines;
 };
 
 /**
@@ -85,7 +114,33 @@ export const getCatererInfoById = async (id: string) => {
     },
   });
 
-  return catererInfo;
+  if (!catererInfo) {
+    return null;
+  }
+
+  // Get dishes created by this caterer to extract cuisines
+  const dishes = await prisma.dish.findMany({
+    where: { caterer_id: catererInfo.caterer_id },
+    include: {
+      cuisine_type: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  // Extract unique cuisine type names
+  const cuisines = [...new Set(
+    dishes
+      .filter((dish) => dish.cuisine_type)
+      .map((dish) => dish.cuisine_type!.name)
+  )];
+
+  return {
+    ...catererInfo,
+    cuisines,
+  };
 };
 
 /**

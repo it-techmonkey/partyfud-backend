@@ -5,6 +5,7 @@ import {
   getPackageById,
   createPackage,
   updatePackage,
+  deletePackage,
 } from "./packages.controller";
 import { linkPackageItemsToPackage } from "../package-items/package-items.controller";
 import { uploadSingle } from "../../../middleware/upload";
@@ -22,6 +23,7 @@ router.post("/", uploadSingle, createPackage);
 router.post("/:id/items/link", linkPackageItemsToPackage);
 router.get("/:id", getPackageById);
 router.put("/:id", uploadSingle, updatePackage);
+router.delete("/:id", deletePackage);
 
 export default router;
 

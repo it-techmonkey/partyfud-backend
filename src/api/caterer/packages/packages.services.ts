@@ -18,6 +18,7 @@ export interface CreatePackageData {
   customisation_type?: "FIXED" | "CUSTOMISABLE";
   package_item_ids?: string[]; // Array of package item IDs to link to this package
   category_selections?: CategorySelection[]; // Only allowed for FIXED packages
+  occassion?: string[]; // Array of occasion IDs
 }
 
 export interface UpdatePackageData {
@@ -32,6 +33,8 @@ export interface UpdatePackageData {
   is_available?: boolean;
   customisation_type?: "FIXED" | "CUSTOMISABLE";
   category_selections?: CategorySelection[]; // Only allowed for FIXED packages
+  occassion?: string[]; // Array of occasion IDs
+  package_item_ids?: string[]; // Array of package item IDs
 }
 
 /**
@@ -139,8 +142,8 @@ export const createPackage = async (
     throw new Error("Invalid package type");
   }
 
-  // Extract package_item_ids and category_selections before creating package (they're not Package fields)
-  const { package_item_ids, category_selections, ...packageDataWithoutItems } = data;
+  // Extract package_item_ids, category_selections, and occassion before creating package (they're not Package fields)
+  const { package_item_ids, category_selections, occassion, ...packageDataWithoutItems } = data;
 
   // Validate category_selections: only allowed for FIXED packages
   const customisationType = data.customisation_type || "FIXED";
@@ -216,6 +219,16 @@ export const createPackage = async (
     });
   }
 
+  // Create occasions if provided
+  if (occassion && occassion.length > 0) {
+    await prisma.packageOccassion.createMany({
+      data: occassion.map(occasionId => ({
+        package_id: packageData.id,
+        occasion_id: occasionId,
+      })),
+    });
+  }
+
   // Fetch updated package with all relations
   const updatedPackage = await prisma.package.findUnique({
     where: { id: packageData.id },
@@ -280,8 +293,8 @@ export const updatePackage = async (
     }
   }
 
-  // Extract category_selections before updating package
-  const { category_selections, ...packageDataWithoutSelections } = data;
+  // Extract category_selections, occassion, and package_item_ids before updating package
+  const { category_selections, occassion, package_item_ids, ...packageDataWithoutSelections } = data;
 
   // Determine customisation type (use existing if not provided)
   const customisationType = data.customisation_type || existingPackage.customisation_type || "FIXED";
@@ -332,6 +345,56 @@ export const updatePackage = async (
     },
   });
 
+  // Handle occasions update
+  if (occassion !== undefined) {
+    // Delete existing occasions
+    await prisma.packageOccassion.deleteMany({
+      where: { package_id: packageId },
+    });
+
+    // Create new occasions if provided
+    if (occassion.length > 0) {
+      await prisma.packageOccassion.createMany({
+        data: occassion.map(occasionId => ({
+          package_id: packageId,
+          occasion_id: occasionId,
+        })),
+      });
+    }
+  }
+
+  // Handle package items update
+  if (package_item_ids !== undefined) {
+    // First, get existing package items
+    const existingItems = await prisma.packageItem.findMany({
+      where: { package_id: packageId },
+      select: { id: true },
+    });
+    const existingItemIds = existingItems.map(item => item.id);
+
+    // Items to add (in package_item_ids but not in existing)
+    const itemsToAdd = package_item_ids.filter(id => !existingItemIds.includes(id));
+    
+    // Items to remove (in existing but not in package_item_ids)
+    const itemsToRemove = existingItemIds.filter(id => !package_item_ids.includes(id));
+
+    // Update items to remove: set package_id to null (make them draft items)
+    if (itemsToRemove.length > 0) {
+      await prisma.packageItem.updateMany({
+        where: { id: { in: itemsToRemove } },
+        data: { package_id: null },
+      });
+    }
+
+    // Update items to add: set package_id
+    if (itemsToAdd.length > 0) {
+      await prisma.packageItem.updateMany({
+        where: { id: { in: itemsToAdd } },
+        data: { package_id: packageId },
+      });
+    }
+  }
+
   // Handle category selections update
   if (category_selections !== undefined) {
     // Delete existing category selections
@@ -349,8 +412,10 @@ export const updatePackage = async (
         })),
       });
     }
+  }
 
-    // Fetch updated package with new category selections
+  // If any related data was updated, fetch the updated package
+  if (category_selections !== undefined || occassion !== undefined || package_item_ids !== undefined) {
     const updatedPackage = await prisma.package.findUnique({
       where: { id: packageId },
       include: {
@@ -382,5 +447,31 @@ export const updatePackage = async (
   }
 
   return packageData;
+};
+
+/**
+ * Delete a package
+ */
+export const deletePackage = async (packageId: string, catererId: string) => {
+  // First verify the package belongs to the caterer
+  const packageData = await prisma.package.findFirst({
+    where: {
+      id: packageId,
+      caterer_id: catererId,
+    },
+  });
+
+  if (!packageData) {
+    throw new Error('Package not found or you do not have permission to delete it');
+  }
+
+  // Delete the package (related records will be cascade deleted based on schema)
+  await prisma.package.delete({
+    where: {
+      id: packageId,
+    },
+  });
+
+  return true;
 };
 

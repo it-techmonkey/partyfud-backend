@@ -187,17 +187,6 @@ export const createDish = async (
 
     const hasSubCategories = subCategoriesCount > 0;
 
-    // Validate subcategory only if category has subcategories
-    if (hasSubCategories && !sub_category_id) {
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "Sub category is required for this category. Please select a sub-category.",
-        },
-      });
-      return;
-    }
-
     let subCategory = null;
     if (sub_category_id) {
       subCategory = await prisma.subCategory.findUnique({
@@ -218,17 +207,8 @@ export const createDish = async (
         });
         return;
       }
-    } else if (hasSubCategories) {
-      // Category has subcategories but none was provided
-      res.status(400).json({
-        success: false,
-        error: {
-          message: "Sub category is required for this category. Please select a sub-category.",
-        },
-      });
-      return;
     }
-    // If category has no subcategories, subCategory can be null (sub_category_id is now optional in schema)
+    // Sub-category is optional - can be null even if category has subcategories
 
     // Parse freeform_ids if provided (can be string or array)
     // FormData sends multiple values with the same key as an array
