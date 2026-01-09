@@ -54,8 +54,12 @@ export const getDashboardStats = async (catererId: string): Promise<DashboardSta
     where: { id: catererId },
   });
 
-  if (!caterer || caterer.type !== "CATERER") {
-    throw new Error("Invalid caterer");
+  if (!caterer) {
+    throw new Error(`User with ID ${catererId} not found`);
+  }
+
+  if (caterer.type !== "CATERER") {
+    throw new Error(`User with ID ${catererId} is not a caterer. User type: ${caterer.type}`);
   }
 
   // Get dishes stats
