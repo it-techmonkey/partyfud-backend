@@ -241,7 +241,7 @@ model PackageCategorySelection {
   id                   String   @id @default(uuid())
   package_id           String
   category_id          String
-  num_dishes_to_select Int
+  num_dishes_to_select Int?     // null = select all, number = select exactly that many
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
   category             Category @relation(fields: [category_id], references: [id])

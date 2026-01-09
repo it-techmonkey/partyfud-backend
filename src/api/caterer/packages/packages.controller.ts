@@ -108,7 +108,9 @@ export const createPackage = async (
       rating,
       is_active,
       is_available,
+      customisation_type,
       package_item_ids, // Array of package item IDs to link
+      category_selections, // Array of { category_id, num_dishes_to_select }
     } = req.body;
 
     // Convert FormData string values to proper types
@@ -147,6 +149,41 @@ export const createPackage = async (
       }
     }
 
+    // Parse customisation_type
+    const parsedCustomisationType = customisation_type === "CUSTOMISABLE" ? "CUSTOMISABLE" : "FIXED";
+
+    // Parse category_selections (only for FIXED packages)
+    let parsedCategorySelections: Array<{ category_id: string; num_dishes_to_select: number | null }> | undefined;
+    if (category_selections) {
+      if (Array.isArray(category_selections)) {
+        parsedCategorySelections = category_selections.map((cs: any) => ({
+          category_id: cs.category_id,
+          num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
+            ? null 
+            : (typeof cs.num_dishes_to_select === 'string' 
+                ? parseInt(cs.num_dishes_to_select, 10) 
+                : cs.num_dishes_to_select),
+        })).filter((cs: any) => cs.category_id);
+      } else if (typeof category_selections === 'string') {
+        // Try to parse JSON string
+        try {
+          const parsed = JSON.parse(category_selections);
+          if (Array.isArray(parsed)) {
+            parsedCategorySelections = parsed.map((cs: any) => ({
+              category_id: cs.category_id,
+              num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
+                ? null 
+                : (typeof cs.num_dishes_to_select === 'string' 
+                    ? parseInt(cs.num_dishes_to_select, 10) 
+                    : cs.num_dishes_to_select),
+            })).filter((cs: any) => cs.category_id);
+          }
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
+      }
+    }
+
     // Validate required fields
     if (!name || !parsedPeopleCount || !package_type_id || !parsedTotalPrice) {
       res.status(400).json({
@@ -169,7 +206,9 @@ export const createPackage = async (
       rating: parsedRating,
       is_active: parsedIsActive,
       is_available: parsedIsAvailable,
+      customisation_type: parsedCustomisationType,
       package_item_ids: parsedPackageItemIds, // Pass item IDs to link
+      category_selections: parsedCategorySelections, // Pass category selections
     });
 
     res.status(201).json({
@@ -226,7 +265,44 @@ export const updatePackage = async (
       rating,
       is_active,
       is_available,
+      customisation_type,
+      category_selections,
     } = req.body;
+
+    // Parse customisation_type
+    const parsedCustomisationType = customisation_type === "CUSTOMISABLE" ? "CUSTOMISABLE" : undefined;
+
+    // Parse category_selections
+    let parsedCategorySelections: Array<{ category_id: string; num_dishes_to_select: number | null }> | undefined;
+    if (category_selections !== undefined) {
+      if (Array.isArray(category_selections)) {
+        parsedCategorySelections = category_selections.map((cs: any) => ({
+          category_id: cs.category_id,
+          num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
+            ? null 
+            : (typeof cs.num_dishes_to_select === 'string' 
+                ? parseInt(cs.num_dishes_to_select, 10) 
+                : cs.num_dishes_to_select),
+        })).filter((cs: any) => cs.category_id);
+      } else if (typeof category_selections === 'string') {
+        // Try to parse JSON string
+        try {
+          const parsed = JSON.parse(category_selections);
+          if (Array.isArray(parsed)) {
+            parsedCategorySelections = parsed.map((cs: any) => ({
+              category_id: cs.category_id,
+              num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
+                ? null 
+                : (typeof cs.num_dishes_to_select === 'string' 
+                    ? parseInt(cs.num_dishes_to_select, 10) 
+                    : cs.num_dishes_to_select),
+            })).filter((cs: any) => cs.category_id);
+          }
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
+      }
+    }
 
     const packageData = await packagesService.updatePackage(
       packageId,
@@ -241,6 +317,8 @@ export const updatePackage = async (
         rating,
         is_active,
         is_available,
+        customisation_type: parsedCustomisationType,
+        category_selections: parsedCategorySelections,
       }
     );
 
