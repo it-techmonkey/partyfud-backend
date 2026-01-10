@@ -75,6 +75,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
     rating: pkg.rating,
     is_available: pkg.is_available,
     customisation_type: pkg.customisation_type,
+    additional_info: pkg.additional_info,
     items: pkg.items.map((item) => ({
       id: item.id,
       dish: {
@@ -210,6 +211,7 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
     rating: pkg.rating,
     is_available: pkg.is_available,
     customisation_type: pkg.customisation_type,
+    additional_info: pkg.additional_info,
     caterer: {
       id: pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
@@ -338,6 +340,7 @@ export const getPackageById = async (packageId: string) => {
     rating: pkg.rating,
     is_available: pkg.is_available,
     customisation_type: pkg.customisation_type,
+    additional_info: pkg.additional_info,
     items: pkg.items.map((item) => ({
       id: item.id,
       dish: {
@@ -644,6 +647,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     rating: pkg.rating,
     is_available: pkg.is_available,
     customisation_type: pkg.customisation_type,
+    additional_info: pkg.additional_info,
     caterer: {
       id: pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
