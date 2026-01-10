@@ -109,6 +109,7 @@ export const createPackage = async (
       is_active,
       is_available,
       customisation_type,
+      additional_info, // Extra pricing and services information
       package_item_ids, // Array of package item IDs to link
       category_selections, // Array of { category_id, num_dishes_to_select }
       occassion, // Array of occasion IDs
@@ -225,6 +226,7 @@ export const createPackage = async (
       is_active: parsedIsActive,
       is_available: parsedIsAvailable,
       customisation_type: parsedCustomisationType,
+      additional_info, // Extra pricing and services information
       package_item_ids: parsedPackageItemIds, // Pass item IDs to link
       category_selections: parsedCategorySelections, // Pass category selections
       occassion: parsedOccasions, // Pass occasions
@@ -285,6 +287,7 @@ export const updatePackage = async (
       is_active,
       is_available,
       customisation_type,
+      additional_info, // Extra pricing and services information
       category_selections,
       occassion,
       package_item_ids,
@@ -379,6 +382,7 @@ export const updatePackage = async (
         is_active: is_active !== undefined ? is_active === 'true' || is_active === true : undefined,
         is_available: is_available !== undefined ? is_available === 'true' || is_available === true : undefined,
         customisation_type: parsedCustomisationType,
+        additional_info, // Extra pricing and services information
         category_selections: parsedCategorySelections,
         occassion: parsedOccasions,
         package_item_ids: parsedPackageItemIds,

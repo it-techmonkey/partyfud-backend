@@ -16,6 +16,7 @@ export interface CreatePackageData {
   is_active?: boolean;
   is_available?: boolean;
   customisation_type?: "FIXED" | "CUSTOMISABLE";
+  additional_info?: string; // Extra pricing and services information
   package_item_ids?: string[]; // Array of package item IDs to link to this package
   category_selections?: CategorySelection[]; // Only allowed for FIXED packages
   occassion?: string[]; // Array of occasion IDs
@@ -32,6 +33,7 @@ export interface UpdatePackageData {
   is_active?: boolean;
   is_available?: boolean;
   customisation_type?: "FIXED" | "CUSTOMISABLE";
+  additional_info?: string; // Extra pricing and services information
   category_selections?: CategorySelection[]; // Only allowed for FIXED packages
   occassion?: string[]; // Array of occasion IDs
   package_item_ids?: string[]; // Array of package item IDs
@@ -157,7 +159,7 @@ export const createPackage = async (
     const existingCategories = await prisma.category.findMany({
       where: { id: { in: categoryIds } },
     });
-    
+
     if (existingCategories.length !== categoryIds.length) {
       throw new Error("One or more categories not found");
     }
@@ -310,7 +312,7 @@ export const updatePackage = async (
     const existingCategories = await prisma.category.findMany({
       where: { id: { in: categoryIds } },
     });
-    
+
     if (existingCategories.length !== categoryIds.length) {
       throw new Error("One or more categories not found");
     }
@@ -374,7 +376,7 @@ export const updatePackage = async (
 
     // Items to add (in package_item_ids but not in existing)
     const itemsToAdd = package_item_ids.filter(id => !existingItemIds.includes(id));
-    
+
     // Items to remove (in existing but not in package_item_ids)
     const itemsToRemove = existingItemIds.filter(id => !package_item_ids.includes(id));
 

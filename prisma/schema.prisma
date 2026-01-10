@@ -198,6 +198,7 @@ model Package {
   user_id             String?                    // ID of the user who created this package (for USER-created packages)
   created_by          CreatedBy                  @default(CATERER)
   customisation_type  CustomisationType          @default(FIXED)
+  additional_info     String?                    @db.Text // Extra pricing and services information
   created_at          DateTime                   @default(now())
   updated_at          DateTime                   @updatedAt
   caterer             User                       @relation(fields: [caterer_id], references: [id], onDelete: Cascade)
