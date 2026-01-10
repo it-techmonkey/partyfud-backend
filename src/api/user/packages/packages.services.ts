@@ -413,6 +413,7 @@ export interface PackageFilters {
   sort_by?: 'price_asc' | 'price_desc' | 'rating_desc' | 'created_desc';
   created_by?: 'USER' | 'CATERER'; // Filter by who created the package
   user_id?: string; // Filter by user ID who created the package
+  dish_id?: string; // Filter by dish ID the package contains
 }
 
 /**
@@ -544,9 +545,12 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     };
   }
 
-  // Filter by cuisine_type and/or category (through package items -> dishes)
-  if (filters.cuisine_type_id || filters.category_id) {
+  // Handle dish, cuisine, and category filters together
+  if (filters.dish_id || filters.cuisine_type_id || filters.category_id) {
     const dishFilters: any = {};
+    if (filters.dish_id) {
+      dishFilters.id = filters.dish_id;
+    }
     if (filters.cuisine_type_id) {
       dishFilters.cuisine_type_id = filters.cuisine_type_id;
     }
