@@ -5,7 +5,7 @@ import prisma from "../../lib/prisma";
 
 /**
  * Signup controller
- * POST /api/auth/signup
+ * POST /api/auth/signups
  */
 export const signup = async (
   req: Request,
