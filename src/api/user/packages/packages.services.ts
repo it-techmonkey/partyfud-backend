@@ -404,6 +404,7 @@ export interface PackageFilters {
   min_price?: number;
   max_price?: number;
   occasion_id?: string;
+  occasion_ids?: string[]; // Support multiple occasion IDs
   cuisine_type_id?: string;
   category_id?: string;
   package_type?: string;
@@ -504,7 +505,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     if (filters.region) {
       locationFilters.push({ region: { contains: filters.region, mode: 'insensitive' } });
     }
-    
+
     packageWhere.caterer = {
       ...packageWhere.caterer,
       catererinfo: {
@@ -514,8 +515,18 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     };
   }
 
-  // Filter by occasion
-  if (filters.occasion_id) {
+  // Filter by occasion (support both single and multiple)
+  if (filters.occasion_ids && filters.occasion_ids.length > 0) {
+    // Multiple occasions - package must have at least one of the selected occasions
+    packageWhere.occasions = {
+      some: {
+        occasion_id: {
+          in: filters.occasion_ids,
+        },
+      },
+    };
+  } else if (filters.occasion_id) {
+    // Single occasion (backward compatibility)
     packageWhere.occasions = {
       some: {
         occasion_id: filters.occasion_id,
@@ -542,7 +553,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     if (filters.category_id) {
       dishFilters.category_id = filters.category_id;
     }
-    
+
     packageWhere.items = {
       some: {
         dish: dishFilters,
@@ -734,12 +745,12 @@ export const createCustomPackage = async (
   // Filter out null values to get only dishes with caterer_id set
   const dishesWithCaterer = dishes.filter((dish) => dish.caterer_id);
   const catererIds = new Set(dishesWithCaterer.map((dish) => dish.caterer_id).filter(Boolean));
-  
+
   // If some dishes don't have caterer_id, we need to check if we can infer it
   const dishesWithoutCaterer = dishes.filter((dish) => !dish.caterer_id);
-  
+
   let catererId: string | null = null;
-  
+
   if (catererIds.size === 0) {
     // All dishes lack caterer_id - try to infer from package items if possible
     // This can happen if dishes were added to packages before caterer_id was required
@@ -757,13 +768,13 @@ export const createCustomPackage = async (
           },
         },
       });
-      
+
       const packageCatererIds = new Set(
         packageItems
           .map((item) => item.package?.caterer_id)
           .filter(Boolean)
       );
-      
+
       if (packageCatererIds.size === 1) {
         catererId = Array.from(packageCatererIds)[0] as string;
       } else if (packageCatererIds.size === 0) {
@@ -776,7 +787,7 @@ export const createCustomPackage = async (
     }
   } else if (catererIds.size === 1) {
     catererId = Array.from(catererIds)[0] as string;
-    
+
     // If some dishes don't have caterer_id but others do, check if we can infer it
     if (dishesWithoutCaterer.length > 0) {
       // Verify that dishes without caterer_id belong to packages from the same caterer
@@ -792,13 +803,13 @@ export const createCustomPackage = async (
           },
         },
       });
-      
+
       const packageCatererIds = new Set(
         packageItems
           .map((item) => item.package?.caterer_id)
           .filter(Boolean)
       );
-      
+
       // If all dishes without caterer_id are from packages with the same caterer as dishes with caterer_id
       if (packageCatererIds.size > 0 && Array.from(packageCatererIds)[0] === catererId) {
         // All good - dishes without caterer_id belong to the same caterer
@@ -809,7 +820,7 @@ export const createCustomPackage = async (
   } else {
     throw new Error("All dishes must be from the same caterer");
   }
-  
+
   if (!catererId) {
     throw new Error("Unable to determine caterer for selected dishes");
   }
@@ -913,7 +924,7 @@ export const createCustomPackage = async (
   await Promise.all(
     dishes.map(async (dish) => {
       const quantity = dishQuantities[dish.id] || 1;
-      
+
       return await prisma.packageItem.create({
         data: {
           package_id: packageData.id,
