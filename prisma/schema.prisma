@@ -186,6 +186,7 @@ model PackageOccassion {
 model Package {
   id                  String                     @id @default(uuid())
   name                String
+  description         String?                    @db.Text // Package description
   people_count        Int
   package_type_id     String
   cover_image_url     String?

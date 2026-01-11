@@ -61,6 +61,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
   return packages.map((pkg) => ({
     id: pkg.id,
     name: pkg.name,
+    description: pkg.description,
     people_count: pkg.people_count,
     package_type: {
       id: pkg.package_type.id,
@@ -199,6 +200,7 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
     name: pkg.name,
     people_count: pkg.people_count,
     package_type: {
+    description: pkg.description,
       id: pkg.package_type.id,
       name: pkg.package_type.name,
       image_url: pkg.package_type.image_url,
@@ -327,6 +329,7 @@ export const getPackageById = async (packageId: string) => {
     id: pkg.id,
     name: pkg.name,
     people_count: pkg.people_count,
+    description: pkg.description,
     package_type: {
       id: pkg.package_type.id,
       name: pkg.package_type.name,
@@ -633,6 +636,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
   return packages.map((pkg) => ({
     id: pkg.id,
     name: pkg.name,
+    description: pkg.description,
     people_count: pkg.people_count,
     package_type: {
       id: pkg.package_type.id,

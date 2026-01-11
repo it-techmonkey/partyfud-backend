@@ -101,6 +101,7 @@ export const createPackage = async (
 
     const {
       name,
+      description,
       people_count,
       package_type_id,
       total_price,
@@ -217,6 +218,7 @@ export const createPackage = async (
 
     const packageData = await packagesService.createPackage(catererId, {
       name,
+      description,
       people_count: parsedPeopleCount,
       package_type_id,
       cover_image_url,
@@ -279,6 +281,7 @@ export const updatePackage = async (
 
     const {
       name,
+      description,
       people_count,
       package_type_id,
       total_price,
@@ -373,6 +376,7 @@ export const updatePackage = async (
       catererId,
       {
         name,
+        description,
         people_count: people_count !== undefined ? parseInt(people_count, 10) : undefined,
         package_type_id,
         cover_image_url,

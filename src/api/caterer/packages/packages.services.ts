@@ -7,6 +7,7 @@ export interface CategorySelection {
 
 export interface CreatePackageData {
   name: string;
+  description?: string; // Package description
   people_count: number;
   package_type_id: string;
   cover_image_url?: string;
@@ -24,6 +25,7 @@ export interface CreatePackageData {
 
 export interface UpdatePackageData {
   name?: string;
+  description?: string; // Package description
   people_count?: number;
   package_type_id?: string;
   cover_image_url?: string;
