@@ -198,9 +198,9 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
   return packages.map((pkg) => ({
     id: pkg.id,
     name: pkg.name,
+    description: pkg.description,
     people_count: pkg.people_count,
     package_type: {
-    description: pkg.description,
       id: pkg.package_type.id,
       name: pkg.package_type.name,
       image_url: pkg.package_type.image_url,
