@@ -44,7 +44,7 @@ export const getPackageById = async (
   console.log("🔴 [GET PACKAGE BY ID] Request URL:", req.url);
   console.log("🔴 [GET PACKAGE BY ID] Request path:", req.path);
   console.log("🔴 [GET PACKAGE BY ID] Params:", req.params);
-  
+
   try {
     const user = (req as any).user;
     const catererId = user.userId;
@@ -84,7 +84,7 @@ export const createPackage = async (
 
     // Handle image upload if provided
     let cover_image_url: string | undefined = req.body.cover_image_url; // Fallback to URL if provided
-    
+
     if ((req as any).file) {
       try {
         cover_image_url = await uploadToCloudinary((req as any).file, 'partyfud/packages');
@@ -116,12 +116,12 @@ export const createPackage = async (
     } = req.body;
 
     // Convert FormData string values to proper types
-    const parsedPeopleCount = typeof people_count === 'string' 
-      ? parseInt(people_count, 10) 
+    const parsedPeopleCount = typeof people_count === 'string'
+      ? parseInt(people_count, 10)
       : (typeof people_count === 'number' ? people_count : 0);
 
-    const parsedTotalPrice = typeof total_price === 'string' 
-      ? parseFloat(total_price) 
+    const parsedTotalPrice = typeof total_price === 'string'
+      ? parseFloat(total_price)
       : (typeof total_price === 'number' ? total_price : 0);
 
     const parsedRating = rating !== undefined
@@ -130,14 +130,14 @@ export const createPackage = async (
 
     const parsedIsActive = is_active !== undefined
       ? (typeof is_active === 'string'
-          ? is_active === 'true' || is_active === '1'
-          : is_active)
+        ? is_active === 'true' || is_active === '1'
+        : is_active)
       : undefined;
 
     const parsedIsAvailable = is_available !== undefined
       ? (typeof is_available === 'string'
-          ? is_available === 'true' || is_available === '1'
-          : is_available)
+        ? is_available === 'true' || is_available === '1'
+        : is_available)
       : undefined;
 
     // Parse package_item_ids (can be string or array from FormData)
@@ -177,11 +177,11 @@ export const createPackage = async (
       if (Array.isArray(category_selections)) {
         parsedCategorySelections = category_selections.map((cs: any) => ({
           category_id: cs.category_id,
-          num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
-            ? null 
-            : (typeof cs.num_dishes_to_select === 'string' 
-                ? parseInt(cs.num_dishes_to_select, 10) 
-                : cs.num_dishes_to_select),
+          num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined
+            ? null
+            : (typeof cs.num_dishes_to_select === 'string'
+              ? parseInt(cs.num_dishes_to_select, 10)
+              : cs.num_dishes_to_select),
         })).filter((cs: any) => cs.category_id);
       } else if (typeof category_selections === 'string') {
         // Try to parse JSON string
@@ -190,11 +190,11 @@ export const createPackage = async (
           if (Array.isArray(parsed)) {
             parsedCategorySelections = parsed.map((cs: any) => ({
               category_id: cs.category_id,
-              num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
-                ? null 
-                : (typeof cs.num_dishes_to_select === 'string' 
-                    ? parseInt(cs.num_dishes_to_select, 10) 
-                    : cs.num_dishes_to_select),
+              num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined
+                ? null
+                : (typeof cs.num_dishes_to_select === 'string'
+                  ? parseInt(cs.num_dishes_to_select, 10)
+                  : cs.num_dishes_to_select),
             })).filter((cs: any) => cs.category_id);
           }
         } catch (e) {
@@ -262,7 +262,7 @@ export const updatePackage = async (
 
     // Handle image upload if provided
     let cover_image_url: string | undefined = req.body.cover_image_url; // Fallback to URL if provided
-    
+
     if ((req as any).file) {
       try {
         cover_image_url = await uploadToCloudinary((req as any).file, 'partyfud/packages');
@@ -342,11 +342,11 @@ export const updatePackage = async (
       if (Array.isArray(category_selections)) {
         parsedCategorySelections = category_selections.map((cs: any) => ({
           category_id: cs.category_id,
-          num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
-            ? null 
-            : (typeof cs.num_dishes_to_select === 'string' 
-                ? parseInt(cs.num_dishes_to_select, 10) 
-                : cs.num_dishes_to_select),
+          num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined
+            ? null
+            : (typeof cs.num_dishes_to_select === 'string'
+              ? parseInt(cs.num_dishes_to_select, 10)
+              : cs.num_dishes_to_select),
         })).filter((cs: any) => cs.category_id);
       } else if (typeof category_selections === 'string') {
         // Try to parse JSON string
@@ -355,11 +355,11 @@ export const updatePackage = async (
           if (Array.isArray(parsed)) {
             parsedCategorySelections = parsed.map((cs: any) => ({
               category_id: cs.category_id,
-              num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined 
-                ? null 
-                : (typeof cs.num_dishes_to_select === 'string' 
-                    ? parseInt(cs.num_dishes_to_select, 10) 
-                    : cs.num_dishes_to_select),
+              num_dishes_to_select: cs.num_dishes_to_select === null || cs.num_dishes_to_select === undefined
+                ? null
+                : (typeof cs.num_dishes_to_select === 'string'
+                  ? parseInt(cs.num_dishes_to_select, 10)
+                  : cs.num_dishes_to_select),
             })).filter((cs: any) => cs.category_id);
           }
         } catch (e) {
@@ -395,10 +395,10 @@ export const updatePackage = async (
     });
   } catch (error: any) {
     console.error('Error updating package:', error);
-    
+
     let statusCode = 400;
     let errorMessage = error.message || 'An error occurred while updating the package';
-    
+
     // Handle specific error types with user-friendly messages
     if (error.message?.includes('not found') || error.message?.includes('permission')) {
       statusCode = 404;
@@ -419,7 +419,7 @@ export const updatePackage = async (
       statusCode = 409;
       errorMessage = 'A package with this name already exists.';
     }
-    
+
     res.status(statusCode).json({
       success: false,
       error: {

@@ -647,7 +647,6 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     rating: pkg.rating,
     is_available: pkg.is_available,
     customisation_type: pkg.customisation_type,
-    additional_info: pkg.additional_info,
     caterer: {
       id: pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
