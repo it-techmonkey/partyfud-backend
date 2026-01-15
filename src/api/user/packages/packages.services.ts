@@ -893,6 +893,8 @@ export const createCustomPackage = async (
   }
 
   // Calculate total price from dishes
+  // Note: Dish prices are stored as per-person prices
+  // Total price = sum of (dish_price * quantity) * people_count
   let totalPrice = 0;
   const dishQuantities = data.quantities || {};
 
@@ -901,6 +903,9 @@ export const createCustomPackage = async (
     const dishPrice = Number(dish.price);
     totalPrice += dishPrice * quantity;
   });
+
+  // Multiply by people_count since dish prices are per-person
+  totalPrice = totalPrice * data.people_count;
 
   // Generate package name if not provided
   const packageName =
