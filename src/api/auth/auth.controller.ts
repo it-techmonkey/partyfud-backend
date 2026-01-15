@@ -730,4 +730,79 @@ export const updateCatererInfo = async (
   }
 };
 
+/**
+ * Update user profile
+ * PUT /api/auth/profile
+ */
+export const updateUserProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        error: {
+          message: "Unauthorized",
+        },
+      });
+      return;
+    }
+
+    const {
+      first_name,
+      last_name,
+      phone,
+      email,
+      company_name,
+    } = req.body;
+
+    // Handle image upload if provided
+    let image_url: string | undefined = req.body.image_url;
+    
+    if ((req as any).file) {
+      try {
+        image_url = await uploadToCloudinary((req as any).file, 'partyfud/users');
+      } catch (uploadError: any) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: `Image upload failed: ${uploadError.message}`,
+          },
+        });
+        return;
+      }
+    }
+
+    const updatedUser = await authService.updateUserProfile(userId, {
+      first_name,
+      last_name,
+      phone,
+      email,
+      company_name,
+      image_url,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+      message: "Profile updated successfully",
+    });
+  } catch (error: any) {
+    if (error.message && (error.message.includes("not found") || error.message.includes("already taken"))) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: error.message,
+        },
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
 

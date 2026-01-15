@@ -343,6 +343,8 @@ export const getPackageById = async (packageId: string) => {
     rating: pkg.rating,
     is_available: pkg.is_available,
     customisation_type: pkg.customisation_type,
+    created_by: pkg.created_by,
+    user_id: pkg.user_id,
     additional_info: pkg.additional_info,
     items: pkg.items.map((item) => ({
       id: item.id,

@@ -22,8 +22,12 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "prisma", "*.config.ts"],
+  "exclude": ["node_modules", "dist"],
   "ts-node": {
-    "esm": false
+    "esm": false,
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
   }
 }

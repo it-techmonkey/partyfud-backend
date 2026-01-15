@@ -283,4 +283,70 @@ export const updateCatererInfo = async (data: CatererInfoData) => {
   return updatedCatererInfo;
 };
 
+export interface UpdateUserProfileData {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  email?: string;
+  company_name?: string;
+  image_url?: string;
+}
+
+/**
+ * Update user profile
+ */
+export const updateUserProfile = async (userId: string, data: UpdateUserProfileData) => {
+  // Check if user exists
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existingUser) {
+    throw new Error("User not found");
+  }
+
+  // If email is being updated, check if it's already taken by another user
+  if (data.email && data.email !== existingUser.email) {
+    const emailExists = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (emailExists) {
+      throw new Error("Email is already taken");
+    }
+  }
+
+  // Prepare update data - only include fields that are provided
+  const updateData: any = {};
+  
+  if (data.first_name !== undefined) updateData.first_name = data.first_name;
+  if (data.last_name !== undefined) updateData.last_name = data.last_name;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.company_name !== undefined) updateData.company_name = data.company_name;
+  if (data.image_url !== undefined) updateData.image_url = data.image_url;
+
+  // Update user
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: {
+      id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      phone: true,
+      company_name: true,
+      image_url: true,
+      type: true,
+      profile_completed: true,
+      verified: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+
+  return updatedUser;
+};
+
 
