@@ -334,7 +334,8 @@ export const createCustomPackage = async (
     const packageData = await packagesService.createCustomPackage(userId, {
       name,
       dish_ids,
-      people_count,
+      minimum_people: people_count,
+      people_count, // Keep for backward compatibility
       quantities,
     });
 

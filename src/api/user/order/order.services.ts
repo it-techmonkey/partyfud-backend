@@ -93,7 +93,6 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
           include: {
             package: {
               include: {
-                package_type: true,
                 caterer: {
                   include: {
                     catererinfo: true,
@@ -101,7 +100,6 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
                 },
               },
             },
-            package_type: true,
           },
         },
       },
@@ -133,22 +131,14 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
-        package_type: {
-          id: item.package.package_type.id,
-          name: item.package.package_type.name,
-        },
         caterer: {
           id: item.package.caterer.id,
           business_name: item.package.caterer.catererinfo?.business_name || null,
         },
-      },
-      package_type: {
-        id: item.package_type.id,
-        name: item.package_type.name,
       },
       location: item.location,
       guests: item.guests,
@@ -210,7 +200,6 @@ export const updateOrder = async (
         include: {
           package: {
             include: {
-              package_type: true,
               caterer: {
                 include: {
                   catererinfo: true,
@@ -218,7 +207,6 @@ export const updateOrder = async (
               },
             },
           },
-          package_type: true,
         },
       },
     },
@@ -235,22 +223,14 @@ export const updateOrder = async (
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
-        package_type: {
-          id: item.package.package_type.id,
-          name: item.package.package_type.name,
-        },
         caterer: {
           id: item.package.caterer.id,
           business_name: item.package.caterer.catererinfo?.business_name || null,
         },
-      },
-      package_type: {
-        id: item.package_type.id,
-        name: item.package_type.name,
       },
       location: item.location,
       guests: item.guests,
@@ -305,7 +285,6 @@ export const getOrders = async (userId: string) => {
         include: {
           package: {
             include: {
-              package_type: true,
               caterer: {
                 include: {
                   catererinfo: true,
@@ -313,7 +292,6 @@ export const getOrders = async (userId: string) => {
               },
             },
           },
-          package_type: true,
         },
       },
     },
@@ -333,22 +311,14 @@ export const getOrders = async (userId: string) => {
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
-        package_type: {
-          id: item.package.package_type.id,
-          name: item.package.package_type.name,
-        },
         caterer: {
           id: item.package.caterer.id,
           business_name: item.package.caterer.catererinfo?.business_name || null,
         },
-      },
-      package_type: {
-        id: item.package_type.id,
-        name: item.package_type.name,
       },
       location: item.location,
       guests: item.guests,
@@ -375,7 +345,6 @@ export const getOrderById = async (userId: string, orderId: string) => {
         include: {
           package: {
             include: {
-              package_type: true,
               caterer: {
                 include: {
                   catererinfo: true,
@@ -383,7 +352,6 @@ export const getOrderById = async (userId: string, orderId: string) => {
               },
             },
           },
-          package_type: true,
         },
       },
     },
@@ -404,22 +372,14 @@ export const getOrderById = async (userId: string, orderId: string) => {
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
-        package_type: {
-          id: item.package.package_type.id,
-          name: item.package.package_type.name,
-        },
         caterer: {
           id: item.package.caterer.id,
           business_name: item.package.caterer.catererinfo?.business_name || null,
         },
-      },
-      package_type: {
-        id: item.package_type.id,
-        name: item.package_type.name,
       },
       location: item.location,
       guests: item.guests,

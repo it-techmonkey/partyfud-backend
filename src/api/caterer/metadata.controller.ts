@@ -132,6 +132,7 @@ export const getFreeForms = async (
 /**
  * Get all package types
  * GET /api/caterer/metadata/package-types
+ * Note: PackageType model has been removed. This endpoint returns empty array for backward compatibility.
  */
 export const getPackageTypes = async (
   req: Request,
@@ -139,15 +140,10 @@ export const getPackageTypes = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const packageTypes = await prisma.packageType.findMany({
-      orderBy: {
-        name: "asc",
-      },
-    });
-
+    // PackageType model no longer exists, return empty array for backward compatibility
     res.status(200).json({
       success: true,
-      data: packageTypes,
+      data: [],
     });
   } catch (error: any) {
     res.status(500).json({

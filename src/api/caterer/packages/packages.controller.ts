@@ -359,6 +359,14 @@ export const updatePackage = async (
       }
     }
 
+    // Parse minimum_people
+    let parsedMinimumPeople: number | undefined;
+    if (minimum_people !== undefined) {
+      parsedMinimumPeople = typeof minimum_people === 'string' 
+        ? parseInt(minimum_people, 10) 
+        : minimum_people;
+    }
+
     // Parse customisation_type
     const parsedCustomisationType = customisation_type === "CUSTOMISABLE" ? "CUSTOMISABLE" : undefined;
 

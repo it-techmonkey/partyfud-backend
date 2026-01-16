@@ -152,7 +152,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
 
       // Calculate price per person for each package
       const packagePrices = caterer.packages.map((pkg) => {
-        const pricePerPerson = Number(pkg.total_price) / pkg.people_count;
+        const pricePerPerson = Number(pkg.total_price) / pkg.minimum_people;
         return pricePerPerson;
       });
 
@@ -229,7 +229,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
 const formatCatererData = (caterer: any) => {
   const packages = caterer.packages || [];
   const packagePrices = packages.map((pkg: any) => {
-    return Number(pkg.total_price) / pkg.people_count;
+    return Number(pkg.total_price) / pkg.minimum_people;
   });
 
   const minPricePerPerson =
@@ -274,9 +274,9 @@ const formatCatererData = (caterer: any) => {
     packages: packages.map((pkg: any) => ({
       id: pkg.id,
       name: pkg.name,
-      people_count: pkg.people_count,
+      people_count: pkg.minimum_people,
       total_price: Number(pkg.total_price),
-      price_per_person: Number(pkg.total_price) / pkg.people_count,
+      price_per_person: Number(pkg.total_price) / pkg.minimum_people,
       currency: pkg.currency,
       customisation_type: pkg.customisation_type,
       rating: pkg.rating,

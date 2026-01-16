@@ -96,7 +96,6 @@ export const createCartItem = async (
     include: {
       package: {
         include: {
-          package_type: true,
           caterer: {
             include: {
               catererinfo: true,
@@ -104,7 +103,6 @@ export const createCartItem = async (
           },
         },
       },
-      package_type: true,
     },
   });
 
@@ -113,22 +111,14 @@ export const createCartItem = async (
     package: {
       id: cartItem.package.id,
       name: cartItem.package.name,
-      people_count: cartItem.package.people_count,
+      people_count: cartItem.package.minimum_people,
       total_price: Number(cartItem.package.total_price),
       currency: cartItem.package.currency,
       cover_image_url: cartItem.package.cover_image_url,
-      package_type: {
-        id: cartItem.package.package_type.id,
-        name: cartItem.package.package_type.name,
-      },
       caterer: {
         id: cartItem.package.caterer.id,
         business_name: cartItem.package.caterer.catererinfo?.business_name || null,
       },
-    },
-    package_type: {
-      id: cartItem.package_type.id,
-      name: cartItem.package_type.name,
     },
     location: cartItem.location,
     guests: cartItem.guests,
@@ -189,7 +179,6 @@ export const updateCartItem = async (
     include: {
       package: {
         include: {
-          package_type: true,
           caterer: {
             include: {
               catererinfo: true,
@@ -197,7 +186,6 @@ export const updateCartItem = async (
           },
         },
       },
-      package_type: true,
     },
   });
 
@@ -206,22 +194,14 @@ export const updateCartItem = async (
     package: {
       id: updatedCartItem.package.id,
       name: updatedCartItem.package.name,
-      people_count: updatedCartItem.package.people_count,
+      people_count: updatedCartItem.package.minimum_people,
       total_price: Number(updatedCartItem.package.total_price),
       currency: updatedCartItem.package.currency,
       cover_image_url: updatedCartItem.package.cover_image_url,
-      package_type: {
-        id: updatedCartItem.package.package_type.id,
-        name: updatedCartItem.package.package_type.name,
-      },
       caterer: {
         id: updatedCartItem.package.caterer.id,
         business_name: updatedCartItem.package.caterer.catererinfo?.business_name || null,
       },
-    },
-    package_type: {
-      id: updatedCartItem.package_type.id,
-      name: updatedCartItem.package_type.name,
     },
     location: updatedCartItem.location,
     guests: updatedCartItem.guests,
@@ -276,7 +256,6 @@ export const getCartItems = async (userId: string) => {
         include: {
           package: {
             include: {
-              package_type: true,
               caterer: {
                 include: {
                   catererinfo: true,
@@ -284,7 +263,6 @@ export const getCartItems = async (userId: string) => {
               },
             },
           },
-          package_type: true,
         },
         orderBy: {
           created_at: "desc",
@@ -302,22 +280,14 @@ export const getCartItems = async (userId: string) => {
     package: {
       id: item.package.id,
       name: item.package.name,
-      people_count: item.package.people_count,
+      people_count: item.package.minimum_people,
       total_price: Number(item.package.total_price),
       currency: item.package.currency,
       cover_image_url: item.package.cover_image_url,
-      package_type: {
-        id: item.package.package_type.id,
-        name: item.package.package_type.name,
-      },
       caterer: {
         id: item.package.caterer.id,
         business_name: item.package.caterer.catererinfo?.business_name || null,
       },
-    },
-    package_type: {
-      id: item.package_type.id,
-      name: item.package_type.name,
     },
     location: item.location,
     guests: item.guests,

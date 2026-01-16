@@ -196,16 +196,10 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
     id: pkg.id,
     name: pkg.name,
     description: pkg.description,
-    people_count: pkg.people_count,
-    package_type: {
-      id: pkg.package_type.id,
-      name: pkg.package_type.name,
-      image_url: pkg.package_type.image_url,
-      description: pkg.package_type.description,
-    },
+    people_count: pkg.minimum_people,
     cover_image_url: pkg.cover_image_url,
     total_price: Number(pkg.total_price),
-    price_per_person: Number(pkg.total_price) / pkg.people_count,
+    price_per_person: Number(pkg.total_price) / pkg.minimum_people,
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
@@ -329,12 +323,6 @@ export const getPackageById = async (packageId: string) => {
     minimum_people: minimumPeople,
     people_count: minimumPeople, // Keep for backward compatibility
     description: pkg.description,
-    package_type: {
-      id: pkg.package_type.id,
-      name: pkg.package_type.name,
-      image_url: pkg.package_type.image_url,
-      description: pkg.package_type.description,
-    },
     cover_image_url: pkg.cover_image_url,
     total_price: Number(pkg.total_price),
     price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
@@ -861,7 +849,6 @@ export const createCustomPackage = async (
     data: {
       name: packageName,
       minimum_people: minimumPeople,
-      package_type_id: null, // Package type is no longer required
       cover_image_url: null, // As per requirement
       total_price: totalPrice,
       currency: "AED",
@@ -954,12 +941,6 @@ export const createCustomPackage = async (
     name: completePackage.name,
     minimum_people: minimumPeople,
     people_count: minimumPeople, // Keep for backward compatibility
-    package_type: {
-      id: completePackage.package_type.id,
-      name: completePackage.package_type.name,
-      image_url: completePackage.package_type.image_url,
-      description: completePackage.package_type.description,
-    },
     cover_image_url: completePackage.cover_image_url,
     total_price: Number(completePackage.total_price),
     price_per_person: Number(completePackage.total_price) / minimumPeople, // Calculated for backward compatibility

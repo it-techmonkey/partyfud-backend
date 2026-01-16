@@ -90,7 +90,7 @@ export const getOrdersForCaterer = async (catererId: string) => {
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
@@ -216,7 +216,7 @@ export const getOrderByIdForCaterer = async (catererId: string, orderId: string)
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
@@ -362,7 +362,7 @@ export const updateOrderStatus = async (
       package: {
         id: item.package.id,
         name: item.package.name,
-        people_count: item.package.people_count,
+        people_count: item.package.minimum_people,
         total_price: Number(item.package.total_price),
         currency: item.package.currency,
         cover_image_url: item.package.cover_image_url,
