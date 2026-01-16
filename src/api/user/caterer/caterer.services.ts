@@ -150,7 +150,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
   if (minBudget !== undefined || maxBudget !== undefined) {
     filteredCaterers = caterers.filter((caterer) => {
       if (!caterer.packages || caterer.packages.length === 0) {
-        return false; // Exclude caterers with no packages
+        return true; // Include caterers with no packages (don't filter by budget)
       }
 
       // Calculate price per person for each package
@@ -188,31 +188,36 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
 
   // Filter by menu type based on package customisation_type
   if (menuType) {
-    filteredCaterers = filteredCaterers.filter((caterer) => {
-      if (!caterer.packages || caterer.packages.length === 0) {
-        return false; // Exclude caterers with no packages
-      }
+    // Only apply menu type filter if not all options are selected
+    const allSelected = menuType.fixed && menuType.customizable && menuType.liveStations;
+    const noneSelected = !menuType.fixed && !menuType.customizable && !menuType.liveStations;
+    
+    if (!allSelected && !noneSelected) {
+      filteredCaterers = filteredCaterers.filter((caterer) => {
+        if (!caterer.packages || caterer.packages.length === 0) {
+          return true; // Include caterers with no packages
+        }
 
-      const hasFixedPackages = caterer.packages.some(
-        (pkg: any) => pkg.customisation_type === 'FIXED'
-      );
-      const hasCustomizablePackages = caterer.packages.some(
-        (pkg: any) => pkg.customisation_type === 'CUSTOMISABLE' || pkg.customisation_type === 'CUSTOMIZABLE'
-      );
+        const hasFixedPackages = caterer.packages.some(
+          (pkg: any) => pkg.customisation_type === 'FIXED'
+        );
+        const hasCustomizablePackages = caterer.packages.some(
+          (pkg: any) => pkg.customisation_type === 'CUSTOMISABLE' || pkg.customisation_type === 'CUSTOMIZABLE'
+        );
 
-      // Check if caterer matches selected menu types
-      if (menuType.fixed && !menuType.customizable && !menuType.liveStations) {
-        return hasFixedPackages;
-      }
-      if (menuType.customizable && !menuType.fixed && !menuType.liveStations) {
-        return hasCustomizablePackages;
-      }
-      if (menuType.fixed && menuType.customizable && !menuType.liveStations) {
-        return hasFixedPackages || hasCustomizablePackages;
-      }
-      // If all are selected or none are selected, return true
-      return true;
-    });
+        // Check if caterer matches selected menu types
+        if (menuType.fixed && !menuType.customizable && !menuType.liveStations) {
+          return hasFixedPackages;
+        }
+        if (menuType.customizable && !menuType.fixed && !menuType.liveStations) {
+          return hasCustomizablePackages;
+        }
+        if (menuType.fixed && menuType.customizable && !menuType.liveStations) {
+          return hasFixedPackages || hasCustomizablePackages;
+        }
+        return true;
+      });
+    }
   }
 
   // Format response with calculated price ranges
