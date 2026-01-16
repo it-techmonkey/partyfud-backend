@@ -98,7 +98,7 @@ export const createPackageItem = async (
  */
 export const getPackageItems = async (catererId: string, draftOnly: boolean = false) => {
   console.log("🟢 [SERVICE] getPackageItems called with catererId:", catererId, "draftOnly:", draftOnly);
-  
+
   // Verify caterer exists
   console.log("🟢 [SERVICE] Checking if caterer exists...");
   const caterer = await prisma.user.findUnique({
@@ -126,8 +126,8 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
 
   // Build where clause
   const whereClause: any = {
-      caterer_id: catererId,
-    };
+    caterer_id: catererId,
+  };
 
   // If draftOnly is true, only get items without package_id
   if (draftOnly) {
@@ -137,7 +137,7 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
 
   // Get all package items for this caterer
   console.log("🟢 [SERVICE] Querying package items with where clause:", JSON.stringify(whereClause));
-  
+
   try {
     // Get package items with all relations
     const packageItems = await prisma.packageItem.findMany({
@@ -158,12 +158,12 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
 
     console.log("🟢 [SERVICE] Found", packageItems.length, "package items");
     console.log("🟢 [SERVICE] Package items IDs:", packageItems.map((item: any) => item.id));
-    
+
     // Now manually fetch packages for items that have package_id, but only if they belong to this caterer
     const itemsWithPackages = await Promise.all(
       packageItems.map(async (item: any) => {
         console.log(`🟢 [SERVICE] Processing item ${item.id}: package_id=${item.package_id}`);
-        
+
         if (item.package_id) {
           try {
             // Only fetch package if it belongs to this caterer
@@ -173,7 +173,7 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
                 caterer_id: catererId, // Security: only get packages that belong to this caterer
               },
             });
-            
+
             if (packageData) {
               console.log(`🟢 [SERVICE] Item ${item.id} has valid package: ${packageData.id}`);
               return {
@@ -207,7 +207,7 @@ export const getPackageItems = async (catererId: string, draftOnly: boolean = fa
     // Group items by category_id
     const itemsByCategory = new Map<string, any[]>();
     const uncategorizedItems: any[] = [];
-    
+
     itemsWithPackages.forEach((item: any) => {
       const categoryId = item.dish?.category_id;
       if (categoryId) {

@@ -13,15 +13,29 @@ export const getPackages = async (
 ): Promise<void> => {
   try {
     const user = (req as any).user;
+    if (!user || !user.userId) {
+      res.status(401).json({
+        success: false,
+        error: {
+          message: "Authentication required",
+        },
+      });
+      return;
+    }
+
     const catererId = user.userId;
+    console.log("🔍 [GET PACKAGES] Fetching packages for caterer:", catererId);
 
     const packages = await packagesService.getPackagesByCatererId(catererId);
+    console.log("✅ [GET PACKAGES] Successfully fetched", packages.length, "packages");
 
     res.status(200).json({
       success: true,
       data: packages,
     });
   } catch (error: any) {
+    console.error("❌ [GET PACKAGES] Error:", error);
+    console.error("❌ [GET PACKAGES] Error stack:", error.stack);
     res.status(error.message?.includes("not found") ? 404 : 400).json({
       success: false,
       error: {
@@ -102,8 +116,7 @@ export const createPackage = async (
     const {
       name,
       description,
-      people_count,
-      package_type_id,
+      minimum_people,
       total_price,
       currency,
       rating,
@@ -117,13 +130,13 @@ export const createPackage = async (
     } = req.body;
 
     // Convert FormData string values to proper types
-    const parsedPeopleCount = typeof people_count === 'string'
-      ? parseInt(people_count, 10)
-      : (typeof people_count === 'number' ? people_count : 0);
+    const parsedMinimumPeople = minimum_people !== undefined
+      ? (typeof minimum_people === 'string' ? parseInt(minimum_people, 10) : (typeof minimum_people === 'number' ? minimum_people : undefined))
+      : undefined;
 
-    const parsedTotalPrice = typeof total_price === 'string'
-      ? parseFloat(total_price)
-      : (typeof total_price === 'number' ? total_price : 0);
+    const parsedTotalPrice = total_price !== undefined
+      ? (typeof total_price === 'string' ? parseFloat(total_price) : (typeof total_price === 'number' ? total_price : undefined))
+      : undefined;
 
     const parsedRating = rating !== undefined
       ? (typeof rating === 'string' ? parseFloat(rating) : rating)
@@ -205,12 +218,24 @@ export const createPackage = async (
     }
 
     // Validate required fields
-    if (!name || !parsedPeopleCount || !package_type_id || !parsedTotalPrice) {
+    if (!name || !parsedMinimumPeople) {
       res.status(400).json({
         success: false,
         error: {
           message:
-            "Missing required fields: name, people_count, package_type_id, total_price",
+            "Missing required fields: name, minimum_people",
+        },
+      });
+      return;
+    }
+
+    // Validate that package items are provided if total_price is not provided
+    if (!parsedTotalPrice && (!parsedPackageItemIds || parsedPackageItemIds.length === 0)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message:
+            "Either total_price or package_item_ids must be provided. Package price is calculated from items.",
         },
       });
       return;
@@ -219,8 +244,7 @@ export const createPackage = async (
     const packageData = await packagesService.createPackage(catererId, {
       name,
       description,
-      people_count: parsedPeopleCount,
-      package_type_id,
+      minimum_people: parsedMinimumPeople,
       cover_image_url,
       total_price: parsedTotalPrice,
       currency,
@@ -282,8 +306,7 @@ export const updatePackage = async (
     const {
       name,
       description,
-      people_count,
-      package_type_id,
+      minimum_people,
       total_price,
       currency,
       rating,
@@ -377,8 +400,7 @@ export const updatePackage = async (
       {
         name,
         description,
-        people_count: people_count !== undefined ? parseInt(people_count, 10) : undefined,
-        package_type_id,
+        minimum_people: parsedMinimumPeople,
         cover_image_url,
         total_price: total_price !== undefined ? parseFloat(total_price) : undefined,
         currency,
@@ -407,17 +429,10 @@ export const updatePackage = async (
     if (error.message?.includes('not found') || error.message?.includes('permission')) {
       statusCode = 404;
       errorMessage = 'Package not found or you do not have permission to edit it';
-    } else if (error.message?.includes('Invalid package type')) {
-      statusCode = 400;
-      errorMessage = 'The selected package type is invalid. Please select a valid type.';
     } else if (error.code === 'P2003' || error.message?.includes('Foreign key')) {
       // Prisma foreign key constraint error
       statusCode = 400;
-      if (error.meta?.field_name?.includes('package_type_id')) {
-        errorMessage = 'The selected package type is invalid. Please select a valid type.';
-      } else {
-        errorMessage = 'Unable to update package due to invalid data. Please check all fields.';
-      }
+      errorMessage = 'Unable to update package due to invalid data. Please check all fields.';
     } else if (error.code === 'P2002') {
       // Prisma unique constraint error
       statusCode = 409;

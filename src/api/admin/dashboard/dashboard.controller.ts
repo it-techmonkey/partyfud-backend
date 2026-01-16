@@ -17,7 +17,6 @@ export const getDashboardStats = async (
           include: {
             package: {
               include: {
-                package_type: true,
                 items: {
                   include: {
                     dish: {

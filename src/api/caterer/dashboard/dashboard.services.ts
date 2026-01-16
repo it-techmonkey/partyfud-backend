@@ -38,7 +38,8 @@ export interface DashboardStats {
       cover_image_url: string | null;
       total_price: number;
       currency: string;
-      people_count: number;
+      minimum_people: number;
+      people_count: number; // For frontend compatibility
       is_available: boolean;
       created_at: Date;
     }>;
@@ -142,7 +143,7 @@ export const getDashboardStats = async (catererId: string): Promise<DashboardSta
       cover_image_url: true,
       total_price: true,
       currency: true,
-      people_count: true,
+      minimum_people: true,
       is_available: true,
       created_at: true,
     },
@@ -175,9 +176,10 @@ export const getDashboardStats = async (catererId: string): Promise<DashboardSta
         ...dish,
         price: Number(dish.price),
       })),
-      packages: recentPackages.map((pkg: { id: string; name: string; cover_image_url: string | null; total_price: any; currency: string; people_count: number; is_available: boolean; created_at: Date }) => ({
+      packages: recentPackages.map((pkg: { id: string; name: string; cover_image_url: string | null; total_price: any; currency: string; minimum_people: number; is_available: boolean; created_at: Date }) => ({
         ...pkg,
         total_price: Number(pkg.total_price),
+        people_count: pkg.minimum_people, // Map minimum_people to people_count for frontend compatibility
       })),
     },
   };

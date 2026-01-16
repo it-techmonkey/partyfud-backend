@@ -22,14 +22,14 @@ export const createCartItem = async (
       return;
     }
 
-    const { package_id, package_type_id, location, guests, date, price_at_time } =
+    const { package_id, location, guests, date, price_at_time } =
       req.body;
 
-    if (!package_id || !package_type_id) {
+    if (!package_id) {
       res.status(400).json({
         success: false,
         error: {
-          message: "package_id and package_type_id are required",
+          message: "package_id is required",
         },
       });
       return;
@@ -37,7 +37,6 @@ export const createCartItem = async (
 
     const cartItem = await cartService.createCartItem(user.userId, {
       package_id,
-      package_type_id,
       location,
       guests,
       date: date ? new Date(date) : undefined,

@@ -38,7 +38,6 @@ const getOrCreateCart = async (userId: string) => {
  */
 export interface CreateCartItemInput {
   package_id: string;
-  package_type_id: string;
   location?: string;
   guests?: number;
   date?: Date;
@@ -60,15 +59,6 @@ export const createCartItem = async (
 
   if (!packageData) {
     throw new Error("Package not found or not available");
-  }
-
-  // Verify package type exists
-  const packageType = await prisma.packageType.findUnique({
-    where: { id: input.package_type_id },
-  });
-
-  if (!packageType) {
-    throw new Error("Package type not found");
   }
 
   // Get or create cart
@@ -98,7 +88,6 @@ export const createCartItem = async (
     data: {
       cart_id: cart.id,
       package_id: input.package_id,
-      package_type_id: input.package_type_id,
       location: input.location,
       guests: input.guests,
       date: input.date,

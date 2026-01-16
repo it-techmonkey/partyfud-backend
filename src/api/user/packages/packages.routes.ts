@@ -15,12 +15,6 @@ const router = Router();
 router.get("/caterer/:catererId", packagesController.getPackagesByCatererId);
 
 /**
- * Get all package types
- * GET /api/user/packages/types
- */
-router.get("/types", packagesController.getAllPackageTypes);
-
-/**
  * Get packages created by the authenticated user
  * GET /api/user/packages/my-packages
  * 
@@ -55,7 +49,6 @@ router.get("/occasion/:occasionName", packagesController.getPackagesByOccasionNa
  * - occasion_name: Filter by occasion/event type name (case-insensitive, converts to occasion_id)
  * - cuisine_type_id: Filter by cuisine type
  * - category_id: Filter by category
- * - package_type: Filter by package type name (case-insensitive)
  * - search: Search in package name
  * - menu_type: 'fixed' or 'customizable'
  * - sort_by: 'price_asc', 'price_desc', 'rating_desc', 'created_desc'
@@ -81,7 +74,6 @@ router.get("/:packageId", packagesController.getPackageById);
  *   name?: string,                    // Optional, auto-generated if not provided
  *   dish_ids: string[],              // Required: Array of dish IDs
  *   people_count: number,             // Required: Number of people
- *   package_type_id?: string,        // Optional: Package type ID
  *   quantities?: { [dish_id: string]: number } // Optional: Quantities for each dish
  * }
  */

@@ -172,9 +172,6 @@ export const getAllPackages = async (
       filters.category_id = req.query.category_id;
     }
 
-    if (req.query.package_type && typeof req.query.package_type === 'string') {
-      filters.package_type = req.query.package_type;
-    }
 
     if (req.query.search && typeof req.query.search === 'string') {
       filters.search = req.query.search;
@@ -219,34 +216,6 @@ export const getAllPackages = async (
       success: false,
       error: {
         message: error.message || "An error occurred while fetching packages",
-      },
-    });
-  }
-};
-
-/**
- * Get all package types
- * GET /api/user/packages/types
- */
-export const getAllPackageTypes = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const packageTypes = await packagesService.getAllPackageTypes();
-
-    res.status(200).json({
-      success: true,
-      data: packageTypes,
-      count: packageTypes.length,
-    });
-  } catch (error: any) {
-    console.error("Error fetching package types:", error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: error.message || "An error occurred while fetching package types",
       },
     });
   }
@@ -328,7 +297,7 @@ export const createCustomPackage = async (
       return;
     }
 
-    const { name, dish_ids, people_count, package_type_id, quantities } = req.body;
+    const { name, dish_ids, people_count, quantities } = req.body;
 
     // Validate required fields
     if (!dish_ids || !Array.isArray(dish_ids) || dish_ids.length === 0) {
@@ -366,7 +335,6 @@ export const createCustomPackage = async (
       name,
       dish_ids,
       people_count,
-      package_type_id,
       quantities,
     });
 

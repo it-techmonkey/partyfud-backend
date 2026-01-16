@@ -127,9 +127,6 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
           is_active: true,
           is_available: true,
         },
-        include: {
-          package_type: true,
-        },
       },
       dishes: {
         where: {
@@ -284,7 +281,6 @@ const formatCatererData = (caterer: any) => {
       customisation_type: pkg.customisation_type,
       rating: pkg.rating,
       cover_image_url: pkg.cover_image_url,
-      package_type: pkg.package_type.name,
       is_available: pkg.is_available,
     })),
     packages_count: packages.length,
@@ -322,7 +318,6 @@ export const getCatererById = async (catererId: string) => {
           is_available: true,
         },
         include: {
-          package_type: true,
           items: {
             include: {
               dish: {

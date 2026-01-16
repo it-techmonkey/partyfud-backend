@@ -38,11 +38,11 @@ export const createOrder = async (
     // If items provided, validate structure
     if (items && Array.isArray(items)) {
       for (const item of items) {
-        if (!item.package_id || !item.package_type_id || item.price_at_time === undefined) {
+        if (!item.package_id || item.price_at_time === undefined) {
           res.status(400).json({
             success: false,
             error: {
-              message: "Each item must have package_id, package_type_id, and price_at_time",
+              message: "Each item must have package_id and price_at_time",
             },
           });
           return;

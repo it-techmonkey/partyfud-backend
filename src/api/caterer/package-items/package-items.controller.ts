@@ -131,10 +131,7 @@ export const getPackageItems = async (
       data: result,
     });
   } catch (error: any) {
-    console.error("❌ [GET PACKAGE ITEMS] Error occurred:");
-    console.error("❌ [GET PACKAGE ITEMS] Error message:", error.message);
-    console.error("❌ [GET PACKAGE ITEMS] Error stack:", error.stack);
-    console.error("❌ [GET PACKAGE ITEMS] Full error:", JSON.stringify(error, null, 2));
+    console.error("Error getting package items:", error);
     res.status(error.message?.includes("not found") ? 404 : 400).json({
       success: false,
       error: {

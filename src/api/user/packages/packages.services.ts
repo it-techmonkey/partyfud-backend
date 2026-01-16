@@ -29,7 +29,6 @@ export const getPackagesByCatererId = async (catererId: string) => {
       created_by: "CATERER", // Only show packages created by caterers
     },
     include: {
-      package_type: true,
       items: {
         include: {
           dish: {
@@ -58,20 +57,18 @@ export const getPackagesByCatererId = async (catererId: string) => {
   });
 
   // Format the response
-  return packages.map((pkg) => ({
-    id: pkg.id,
-    name: pkg.name,
-    description: pkg.description,
-    people_count: pkg.people_count,
-    package_type: {
-      id: pkg.package_type.id,
-      name: pkg.package_type.name,
-      image_url: pkg.package_type.image_url,
-      description: pkg.package_type.description,
-    },
-    cover_image_url: pkg.cover_image_url,
-    total_price: Number(pkg.total_price),
-    price_per_person: Number(pkg.total_price) / pkg.people_count,
+  return packages.map((pkg) => {
+    // Support both minimum_people and people_count during migration
+    const minimumPeople = (pkg as any).minimum_people || (pkg as any).people_count || 1;
+    return {
+      id: pkg.id,
+      name: pkg.name,
+      description: pkg.description,
+      minimum_people: minimumPeople,
+      people_count: minimumPeople, // Keep for backward compatibility
+      cover_image_url: pkg.cover_image_url,
+      total_price: Number(pkg.total_price),
+      price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
@@ -117,7 +114,8 @@ export const getPackagesByCatererId = async (catererId: string) => {
     })),
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
-  }));
+    };
+  });
 };
 
 /**
@@ -161,7 +159,6 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
   const packages = await prisma.package.findMany({
     where: packageWhere,
     include: {
-      package_type: true,
       caterer: {
         include: {
           catererinfo: true,
@@ -290,7 +287,6 @@ export const getPackageById = async (packageId: string) => {
       ],
     },
     include: {
-      package_type: true,
       caterer: {
         include: {
           catererinfo: true,
@@ -325,10 +321,13 @@ export const getPackageById = async (packageId: string) => {
   }
 
   // Format the response (same format as getPackagesByCatererId)
+  // Support both minimum_people and people_count during migration
+  const minimumPeople = (pkg as any).minimum_people || (pkg as any).people_count || 1;
   return {
     id: pkg.id,
     name: pkg.name,
-    people_count: pkg.people_count,
+    minimum_people: minimumPeople,
+    people_count: minimumPeople, // Keep for backward compatibility
     description: pkg.description,
     package_type: {
       id: pkg.package_type.id,
@@ -338,7 +337,7 @@ export const getPackageById = async (packageId: string) => {
     },
     cover_image_url: pkg.cover_image_url,
     total_price: Number(pkg.total_price),
-    price_per_person: Number(pkg.total_price) / pkg.people_count,
+    price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
@@ -424,25 +423,6 @@ export interface PackageFilters {
   dish_id?: string; // Filter by dish ID the package contains
 }
 
-/**
- * Get all package types
- */
-export const getAllPackageTypes = async () => {
-  const packageTypes = await prisma.packageType.findMany({
-    orderBy: {
-      name: "asc",
-    },
-  });
-
-  return packageTypes.map((pt) => ({
-    id: pt.id,
-    name: pt.name,
-    image_url: pt.image_url,
-    description: pt.description,
-    created_at: pt.created_at,
-    updated_at: pt.updated_at,
-  }));
-};
 
 export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) => {
   // Build where clause for packages
@@ -475,15 +455,23 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     packageWhere.caterer_id = filters.caterer_id;
   }
 
-  // Filter by people_count (guests)
+  // Filter by minimum_people (guests) - support both field names during migration
   if (filters.min_guests !== undefined || filters.max_guests !== undefined) {
-    packageWhere.people_count = {};
-    if (filters.min_guests !== undefined) {
-      packageWhere.people_count.gte = filters.min_guests;
-    }
-    if (filters.max_guests !== undefined) {
-      packageWhere.people_count.lte = filters.max_guests;
-    }
+    // Use OR condition to support both minimum_people and people_count during migration
+    packageWhere.OR = [
+      {
+        minimum_people: {
+          ...(filters.min_guests !== undefined && { gte: filters.min_guests }),
+          ...(filters.max_guests !== undefined && { lte: filters.max_guests }),
+        },
+      },
+      {
+        people_count: {
+          ...(filters.min_guests !== undefined && { gte: filters.min_guests }),
+          ...(filters.max_guests !== undefined && { lte: filters.max_guests }),
+        },
+      },
+    ];
   }
 
   // Filter by price
@@ -543,15 +531,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     };
   }
 
-  // Filter by package_type name
-  if (filters.package_type) {
-    packageWhere.package_type = {
-      name: {
-        equals: filters.package_type,
-        mode: 'insensitive',
-      },
-    };
-  }
+  // Package type filtering is no longer supported
 
   // Handle dish, cuisine, and category filters together
   if (filters.dish_id || filters.cuisine_type_id || filters.category_id) {
@@ -603,7 +583,6 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
   const packages = await prisma.package.findMany({
     where: packageWhere,
     include: {
-      package_type: true,
       caterer: {
         include: {
           catererinfo: true,
@@ -635,20 +614,18 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
   });
 
   // Format the response (same format as getPackagesByCatererId)
-  return packages.map((pkg) => ({
-    id: pkg.id,
-    name: pkg.name,
-    description: pkg.description,
-    people_count: pkg.people_count,
-    package_type: {
-      id: pkg.package_type.id,
-      name: pkg.package_type.name,
-      image_url: pkg.package_type.image_url,
-      description: pkg.package_type.description,
-    },
-    cover_image_url: pkg.cover_image_url,
-    total_price: Number(pkg.total_price),
-    price_per_person: Number(pkg.total_price) / pkg.people_count,
+  return packages.map((pkg) => {
+    // Support both minimum_people and people_count during migration
+    const minimumPeople = (pkg as any).minimum_people || (pkg as any).people_count || 1;
+    return {
+      id: pkg.id,
+      name: pkg.name,
+      description: pkg.description,
+      minimum_people: minimumPeople,
+      people_count: minimumPeople, // Keep for backward compatibility
+      cover_image_url: pkg.cover_image_url,
+      total_price: Number(pkg.total_price),
+      price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
@@ -698,7 +675,8 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     })),
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
-  }));
+    };
+  });
 };
 
 /**
@@ -708,8 +686,8 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
 export interface CreateCustomPackageData {
   name?: string; // Optional, will be auto-generated if not provided
   dish_ids: string[]; // Array of dish IDs selected by user
-  people_count: number; // Number of people for the package
-  package_type_id?: string; // Optional, will try to find "Custom" or "Customizable" type if not provided
+  minimum_people: number; // Minimum number of people for the package
+  people_count?: number; // Legacy field - kept for backward compatibility
   quantities?: { [dish_id: string]: number }; // Optional quantities for each dish (default: 1)
 }
 
@@ -722,8 +700,10 @@ export const createCustomPackage = async (
     throw new Error("At least one dish ID is required");
   }
 
-  if (!data.people_count || data.people_count <= 0) {
-    throw new Error("people_count must be greater than 0");
+  // Support both minimum_people and people_count during migration
+  const minimumPeople = data.minimum_people || data.people_count || 0;
+  if (!minimumPeople || minimumPeople <= 0) {
+    throw new Error("minimum_people must be greater than 0");
   }
 
   // Verify user exists
@@ -854,47 +834,11 @@ export const createCustomPackage = async (
   }
 
   // Determine package_type_id
-  let packageTypeId = data.package_type_id;
-
-  if (!packageTypeId) {
-    // Try to find "Custom" or "Customizable" package type
-    const customPackageType = await prisma.packageType.findFirst({
-      where: {
-        name: {
-          in: ["Custom", "Customizable"],
-          mode: "insensitive",
-        },
-      },
-    });
-
-    if (customPackageType) {
-      packageTypeId = customPackageType.id;
-    } else {
-      // If no custom type found, get the first available package type
-      const firstPackageType = await prisma.packageType.findFirst({
-        orderBy: { name: "asc" },
-      });
-
-      if (!firstPackageType) {
-        throw new Error("No package types available");
-      }
-
-      packageTypeId = firstPackageType.id;
-    }
-  } else {
-    // Verify provided package type exists
-    const packageType = await prisma.packageType.findUnique({
-      where: { id: packageTypeId },
-    });
-
-    if (!packageType) {
-      throw new Error("Invalid package type");
-    }
-  }
+  // Package type is no longer required
 
   // Calculate total price from dishes
   // Note: Dish prices are stored as per-person prices
-  // Total price = sum of (dish_price * quantity) * people_count
+  // Total price = sum of (dish_price * quantity) * minimum_people
   let totalPrice = 0;
   const dishQuantities = data.quantities || {};
 
@@ -904,20 +848,20 @@ export const createCustomPackage = async (
     totalPrice += dishPrice * quantity;
   });
 
-  // Multiply by people_count since dish prices are per-person
-  totalPrice = totalPrice * data.people_count;
+  // Multiply by minimum_people since dish prices are per-person
+  totalPrice = totalPrice * minimumPeople;
 
   // Generate package name if not provided
   const packageName =
     data.name ||
-    `Custom Package - ${dishes.length} dish${dishes.length > 1 ? "es" : ""} - ${data.people_count} people`;
+    `Custom Package - ${dishes.length} dish${dishes.length > 1 ? "es" : ""} - ${minimumPeople} people`;
 
   // Create the package
   const packageData = await prisma.package.create({
     data: {
       name: packageName,
-      people_count: data.people_count,
-      package_type_id: packageTypeId,
+      minimum_people: minimumPeople,
+      package_type_id: null, // Package type is no longer required
       cover_image_url: null, // As per requirement
       total_price: totalPrice,
       currency: "AED",
@@ -929,7 +873,6 @@ export const createCustomPackage = async (
       is_available: true,
     },
     include: {
-      package_type: true,
       caterer: {
         include: {
           catererinfo: true,
@@ -948,7 +891,7 @@ export const createCustomPackage = async (
           package_id: packageData.id,
           caterer_id: catererId,
           dish_id: dish.id,
-          people_count: data.people_count,
+          people_count: minimumPeople, // PackageItem still uses people_count for the item's people count
           quantity: quantity,
           is_optional: false,
           is_addon: false,
@@ -971,7 +914,6 @@ export const createCustomPackage = async (
   const completePackage = await prisma.package.findUnique({
     where: { id: packageData.id },
     include: {
-      package_type: true,
       caterer: {
         include: {
           catererinfo: true,
@@ -1006,10 +948,12 @@ export const createCustomPackage = async (
   }
 
   // Format the response (same format as other package endpoints)
+  // Use the minimumPeople variable already declared at the beginning of the function
   return {
     id: completePackage.id,
     name: completePackage.name,
-    people_count: completePackage.people_count,
+    minimum_people: minimumPeople,
+    people_count: minimumPeople, // Keep for backward compatibility
     package_type: {
       id: completePackage.package_type.id,
       name: completePackage.package_type.name,
@@ -1018,7 +962,7 @@ export const createCustomPackage = async (
     },
     cover_image_url: completePackage.cover_image_url,
     total_price: Number(completePackage.total_price),
-    price_per_person: Number(completePackage.total_price) / completePackage.people_count,
+    price_per_person: Number(completePackage.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: completePackage.currency,
     rating: completePackage.rating,
     is_available: completePackage.is_available,

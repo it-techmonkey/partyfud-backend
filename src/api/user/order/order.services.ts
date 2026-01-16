@@ -7,7 +7,6 @@ export interface CreateOrderInput {
   cart_item_ids?: string[]; // Optional: create order from specific cart items
   items: Array<{
     package_id: string;
-    package_type_id: string;
     location?: string;
     guests?: number;
     date?: Date;
@@ -41,7 +40,6 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     // Convert cart items to order items format
     orderItems = cart.items.map((item) => ({
       package_id: item.package_id,
-      package_type_id: item.package_type_id,
       location: item.location || undefined,
       guests: item.guests || undefined,
       date: item.date || undefined,
@@ -83,7 +81,6 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
         items: {
           create: orderItems.map((item) => ({
             package_id: item.package_id,
-            package_type_id: item.package_type_id,
             location: item.location,
             guests: item.guests,
             date: item.date,

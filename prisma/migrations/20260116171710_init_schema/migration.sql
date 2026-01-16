@@ -10,6 +10,12 @@ CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'CONFIRMED', 'PAID', 'PREPARING', 
 -- CreateEnum
 CREATE TYPE "ProposalStatus" AS ENUM ('PENDING', 'PROCESSING', 'QUOTED', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'EXPIRED');
 
+-- CreateEnum
+CREATE TYPE "CreatedBy" AS ENUM ('USER', 'CATERER');
+
+-- CreateEnum
+CREATE TYPE "CustomisationType" AS ENUM ('FIXED', 'CUSTOMISABLE');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -39,15 +45,22 @@ CREATE TABLE "catererinfo" (
     "minimum_guests" INTEGER,
     "maximum_guests" INTEGER,
     "region" TEXT,
+    "cuisine_types" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "unavailable_dates" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "delivery_only" BOOLEAN NOT NULL DEFAULT true,
     "delivery_plus_setup" BOOLEAN NOT NULL DEFAULT true,
     "full_service" BOOLEAN NOT NULL DEFAULT true,
     "staff" INTEGER,
     "servers" INTEGER,
+    "preparation_time" INTEGER,
     "food_license" TEXT,
     "Registration" TEXT,
     "caterer_id" TEXT NOT NULL,
     "status" "Status" NOT NULL DEFAULT 'PENDING',
+    "onboarding_step" INTEGER NOT NULL DEFAULT 0,
+    "onboarding_completed" BOOLEAN NOT NULL DEFAULT false,
+    "has_draft" BOOLEAN NOT NULL DEFAULT false,
+    "commission_rate" DOUBLE PRECISION,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -130,21 +143,10 @@ CREATE TABLE "Dish" (
 );
 
 -- CreateTable
-CREATE TABLE "PackageType" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "image_url" TEXT,
-    "description" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "PackageType_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Occassion" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "image_url" TEXT,
     "description" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -166,8 +168,8 @@ CREATE TABLE "PackageOccassion" (
 CREATE TABLE "Package" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "description" TEXT,
     "people_count" INTEGER NOT NULL,
-    "package_type_id" TEXT NOT NULL,
     "cover_image_url" TEXT,
     "total_price" DECIMAL(10,2) NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'AED',
@@ -175,6 +177,10 @@ CREATE TABLE "Package" (
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_available" BOOLEAN NOT NULL DEFAULT true,
     "caterer_id" TEXT NOT NULL,
+    "user_id" TEXT,
+    "created_by" "CreatedBy" NOT NULL DEFAULT 'CATERER',
+    "customisation_type" "CustomisationType" NOT NULL DEFAULT 'FIXED',
+    "additional_info" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -203,7 +209,7 @@ CREATE TABLE "PackageCategorySelection" (
     "id" TEXT NOT NULL,
     "package_id" TEXT NOT NULL,
     "category_id" TEXT NOT NULL,
-    "num_dishes_to_select" INTEGER NOT NULL,
+    "num_dishes_to_select" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -225,7 +231,6 @@ CREATE TABLE "CartItem" (
     "id" TEXT NOT NULL,
     "cart_id" TEXT NOT NULL,
     "package_id" TEXT NOT NULL,
-    "package_type_id" TEXT NOT NULL,
     "location" TEXT,
     "guests" INTEGER,
     "date" TIMESTAMP(3),
@@ -254,7 +259,6 @@ CREATE TABLE "OrderItem" (
     "id" TEXT NOT NULL,
     "order_id" TEXT NOT NULL,
     "package_id" TEXT NOT NULL,
-    "package_type_id" TEXT NOT NULL,
     "location" TEXT,
     "guests" INTEGER,
     "date" TIMESTAMP(3),
@@ -282,6 +286,27 @@ CREATE TABLE "Proposal" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Proposal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Certification" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Certification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CatererCertification" (
+    "id" TEXT NOT NULL,
+    "caterer_info_id" TEXT NOT NULL,
+    "certification_id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CatererCertification_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -330,9 +355,6 @@ CREATE INDEX "Dish_caterer_id_idx" ON "Dish"("caterer_id");
 CREATE INDEX "Dish_is_active_idx" ON "Dish"("is_active");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PackageType_name_key" ON "PackageType"("name");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Occassion_name_key" ON "Occassion"("name");
 
 -- CreateIndex
@@ -345,10 +367,10 @@ CREATE INDEX "PackageOccassion_occasion_id_idx" ON "PackageOccassion"("occasion_
 CREATE UNIQUE INDEX "PackageOccassion_package_id_occasion_id_key" ON "PackageOccassion"("package_id", "occasion_id");
 
 -- CreateIndex
-CREATE INDEX "Package_package_type_id_idx" ON "Package"("package_type_id");
+CREATE INDEX "Package_caterer_id_idx" ON "Package"("caterer_id");
 
 -- CreateIndex
-CREATE INDEX "Package_caterer_id_idx" ON "Package"("caterer_id");
+CREATE INDEX "Package_user_id_idx" ON "Package"("user_id");
 
 -- CreateIndex
 CREATE INDEX "Package_is_active_idx" ON "Package"("is_active");
@@ -384,9 +406,6 @@ CREATE INDEX "CartItem_cart_id_idx" ON "CartItem"("cart_id");
 CREATE INDEX "CartItem_package_id_idx" ON "CartItem"("package_id");
 
 -- CreateIndex
-CREATE INDEX "CartItem_package_type_id_idx" ON "CartItem"("package_type_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "CartItem_cart_id_package_id_key" ON "CartItem"("cart_id", "package_id");
 
 -- CreateIndex
@@ -402,9 +421,6 @@ CREATE INDEX "OrderItem_order_id_idx" ON "OrderItem"("order_id");
 CREATE INDEX "OrderItem_package_id_idx" ON "OrderItem"("package_id");
 
 -- CreateIndex
-CREATE INDEX "OrderItem_package_type_id_idx" ON "OrderItem"("package_type_id");
-
--- CreateIndex
 CREATE INDEX "Proposal_user_id_idx" ON "Proposal"("user_id");
 
 -- CreateIndex
@@ -415,6 +431,18 @@ CREATE INDEX "Proposal_status_idx" ON "Proposal"("status");
 
 -- CreateIndex
 CREATE INDEX "Proposal_created_at_idx" ON "Proposal"("created_at");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Certification_name_key" ON "Certification"("name");
+
+-- CreateIndex
+CREATE INDEX "CatererCertification_caterer_info_id_idx" ON "CatererCertification"("caterer_info_id");
+
+-- CreateIndex
+CREATE INDEX "CatererCertification_certification_id_idx" ON "CatererCertification"("certification_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CatererCertification_caterer_info_id_certification_id_key" ON "CatererCertification"("caterer_info_id", "certification_id");
 
 -- AddForeignKey
 ALTER TABLE "catererinfo" ADD CONSTRAINT "catererinfo_caterer_id_fkey" FOREIGN KEY ("caterer_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -450,7 +478,7 @@ ALTER TABLE "PackageOccassion" ADD CONSTRAINT "PackageOccassion_package_id_fkey"
 ALTER TABLE "Package" ADD CONSTRAINT "Package_caterer_id_fkey" FOREIGN KEY ("caterer_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Package" ADD CONSTRAINT "Package_package_type_id_fkey" FOREIGN KEY ("package_type_id") REFERENCES "PackageType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Package" ADD CONSTRAINT "Package_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PackageItem" ADD CONSTRAINT "PackageItem_caterer_id_fkey" FOREIGN KEY ("caterer_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -477,9 +505,6 @@ ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_cart_id_fkey" FOREIGN KEY ("cart
 ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_package_id_fkey" FOREIGN KEY ("package_id") REFERENCES "Package"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_package_type_id_fkey" FOREIGN KEY ("package_type_id") REFERENCES "PackageType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -489,10 +514,13 @@ ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_order_id_fkey" FOREIGN KEY ("o
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_package_id_fkey" FOREIGN KEY ("package_id") REFERENCES "Package"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_package_type_id_fkey" FOREIGN KEY ("package_type_id") REFERENCES "PackageType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Proposal" ADD CONSTRAINT "Proposal_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Proposal" ADD CONSTRAINT "Proposal_caterer_id_fkey" FOREIGN KEY ("caterer_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CatererCertification" ADD CONSTRAINT "CatererCertification_caterer_info_id_fkey" FOREIGN KEY ("caterer_info_id") REFERENCES "catererinfo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CatererCertification" ADD CONSTRAINT "CatererCertification_certification_id_fkey" FOREIGN KEY ("certification_id") REFERENCES "Certification"("id") ON DELETE CASCADE ON UPDATE CASCADE;
