@@ -286,7 +286,7 @@ export const createPackage = async (
     const existingItems = await prisma.packageItem.findMany({
       where: {
         id: { in: package_item_ids },
-        caterer_id: catererId,
+          caterer_id: catererId,
       },
       include: {
         dish: true,
@@ -308,8 +308,8 @@ export const createPackage = async (
       });
 
       if (dishes.length !== missingIds.length) {
-        throw new Error("Some package items not found or do not belong to this caterer");
-      }
+      throw new Error("Some package items not found or do not belong to this caterer");
+    }
 
       // Create PackageItems from dishes (create individually to get IDs)
       const createdItems = await Promise.all(
@@ -350,12 +350,12 @@ export const createPackage = async (
       packageItemIdsToLink = package_item_ids;
       
       // Calculate price from existing items
-      calculatedPrice = 0;
+    calculatedPrice = 0;
       for (const item of existingItems) {
-        const dishPrice = Number(item.dish.price);
-        const quantity = item.quantity || 1;
-        const itemPrice = item.price_at_time ? Number(item.price_at_time) : dishPrice;
-        calculatedPrice += itemPrice * minimumPeople * quantity;
+      const dishPrice = Number(item.dish.price);
+      const quantity = item.quantity || 1;
+      const itemPrice = item.price_at_time ? Number(item.price_at_time) : dishPrice;
+      calculatedPrice += itemPrice * minimumPeople * quantity;
       }
     }
   }

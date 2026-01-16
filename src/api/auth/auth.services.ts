@@ -147,6 +147,8 @@ export const getUserById = async (userId: string) => {
       company_name: true,
       image_url: true,
       type: true,
+      profile_completed: true,
+      verified: true,
       created_at: true,
       updated_at: true,
     },
