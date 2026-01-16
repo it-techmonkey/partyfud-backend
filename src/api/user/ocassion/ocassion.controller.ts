@@ -69,3 +69,31 @@ export const getOccasionById = async (
   }
 };
 
+/**
+ * Get all cuisine types
+ * GET /api/user/occasions/cuisines
+ */
+export const getAllCuisineTypes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const cuisineTypes = await occasionService.getAllCuisineTypes();
+
+    res.status(200).json({
+      success: true,
+      data: cuisineTypes,
+      count: cuisineTypes.length,
+    });
+  } catch (error: any) {
+    console.error("Error fetching cuisine types:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.message || "An error occurred while fetching cuisine types",
+      },
+    });
+  }
+};
+

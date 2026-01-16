@@ -44,3 +44,20 @@ export const getOccasionById = async (occasionId: string) => {
   };
 };
 
+/**
+ * Get all cuisine types
+ */
+export const getAllCuisineTypes = async () => {
+  const cuisineTypes = await prisma.cuisineType.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return cuisineTypes.map((cuisine) => ({
+    id: cuisine.id,
+    name: cuisine.name,
+    description: cuisine.description,
+  }));
+};
+

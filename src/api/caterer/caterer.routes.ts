@@ -7,6 +7,7 @@ import dashboardRoutes from "./dashboard/dashboard.routes";
 import proposalRoutes from "./proposal/proposal.routes";
 import ordersRoutes from "./orders/orders.routes";
 import infoRoutes from "./info/info.routes";
+import onboardingRoutes from "./onboarding/onboarding.routes";
 
 const router = Router();
 
@@ -33,5 +34,8 @@ router.use("/orders", ordersRoutes);
 
 // Mount info routes at /info
 router.use("/info", infoRoutes);
+
+// Mount onboarding routes at /onboarding
+router.use("/onboarding", onboardingRoutes);
 
 export default router;

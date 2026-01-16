@@ -34,7 +34,7 @@ model User {
 }
 
 model catererinfo {
-  id                   String   @id @default(uuid())
+  id                   String         @id @default(uuid())
   business_name        String
   business_type        String
   business_description String?
@@ -42,19 +42,26 @@ model catererinfo {
   minimum_guests       Int?
   maximum_guests       Int?
   region               String?
-  delivery_only        Boolean  @default(true)
-  delivery_plus_setup  Boolean  @default(true)
-  full_service         Boolean  @default(true)
+  cuisine_types        String[]       @default([])
+  unavailable_dates    String[]       @default([])
+  delivery_only        Boolean        @default(true)
+  delivery_plus_setup  Boolean        @default(true)
+  full_service         Boolean        @default(true)
   staff                Int?
   servers              Int?
   preparation_time     Int?
   food_license         String?
   Registration         String?
-  caterer_id           String   @unique
-  status               Status   @default(PENDING)
-  caterer              User     @relation(fields: [caterer_id], references: [id], onDelete: Cascade)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  caterer_id           String         @unique
+  status               Status         @default(PENDING)
+  onboarding_step      Int            @default(0)
+  onboarding_completed Boolean        @default(false)
+  has_draft            Boolean        @default(false)
+  commission_rate      Float?
+  caterer              User           @relation(fields: [caterer_id], references: [id], onDelete: Cascade)
+  certifications       CatererCertification[]
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
 }
 
 enum Status {
@@ -373,6 +380,28 @@ enum ProposalStatus {
 enum CreatedBy {
   USER
   CATERER
+}
+
+model Certification {
+  id          String                 @id @default(uuid())
+  name        String                 @unique
+  description String?
+  created_at  DateTime               @default(now())
+  updated_at  DateTime               @updatedAt
+  caterers    CatererCertification[]
+}
+
+model CatererCertification {
+  id               String        @id @default(uuid())
+  caterer_info_id  String
+  certification_id String
+  created_at       DateTime      @default(now())
+  catererinfo      catererinfo   @relation(fields: [caterer_info_id], references: [id], onDelete: Cascade)
+  certification    Certification @relation(fields: [certification_id], references: [id], onDelete: Cascade)
+
+  @@unique([caterer_info_id, certification_id])
+  @@index([caterer_info_id])
+  @@index([certification_id])
 }
 
 enum CustomisationType {

@@ -10,6 +10,12 @@ const router = Router();
 router.get("/", occasionController.getAllOccasions);
 
 /**
+ * Get all cuisine types
+ * GET /api/user/occasions/cuisines
+ */
+router.get("/cuisines", occasionController.getAllCuisineTypes);
+
+/**
  * Get occasion by ID
  * GET /api/user/occasions/:occasionId
  */
