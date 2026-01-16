@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "./auth.services";
+import prisma from "../../lib/prisma";
 
 /**
  * Authentication middleware
@@ -45,9 +46,11 @@ export const authenticate = async (
 
 /**
  * Middleware to check if user has specific role
+ * Fetches the current user type from database to handle cases where
+ * the user's role changed after the JWT was issued (e.g., after onboarding)
  */
 export const requireRole = (...allowedRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const user = (req as any).user;
 
     if (!user) {
@@ -60,17 +63,47 @@ export const requireRole = (...allowedRoles: string[]) => {
       return;
     }
 
-    if (!allowedRoles.includes(user.type)) {
-      res.status(403).json({
+    try {
+      // Fetch the current user type from database
+      // This handles cases where the user's type changed after the JWT was issued
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { type: true },
+      });
+
+      if (!dbUser) {
+        res.status(401).json({
+          success: false,
+          error: {
+            message: "User not found",
+          },
+        });
+        return;
+      }
+
+      // Update the user object with the current type from database
+      (req as any).user.type = dbUser.type;
+
+      if (!allowedRoles.includes(dbUser.type)) {
+        res.status(403).json({
+          success: false,
+          error: {
+            message: `Access denied. Required role: ${allowedRoles.join(" or ")}`,
+          },
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      res.status(500).json({
         success: false,
         error: {
-          message: `Access denied. Required role: ${allowedRoles.join(" or ")}`,
+          message: "Internal server error",
         },
       });
-      return;
     }
-
-    next();
   };
 };
 

@@ -188,6 +188,55 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
     },
   });
 
+  // If status is being updated, also update the user's verified and profile_completed fields
+  if (data.status !== undefined) {
+    const userUpdateData: any = {};
+    
+    if (data.status === 'APPROVED') {
+      // When approved, set verified and profile_completed to true
+      userUpdateData.verified = true;
+      userUpdateData.profile_completed = true;
+    } else if (data.status === 'REJECTED' || data.status === 'BLOCKED') {
+      // When rejected or blocked, set verified to false
+      userUpdateData.verified = false;
+      userUpdateData.profile_completed = false;
+    } else if (data.status === 'PENDING') {
+      // When set back to pending, reset verified but keep profile_completed
+      userUpdateData.verified = false;
+    }
+
+    // Update the user table
+    if (Object.keys(userUpdateData).length > 0) {
+      await prisma.user.update({
+        where: { id: updatedCatererInfo.caterer_id },
+        data: userUpdateData,
+      });
+
+      // Refresh the caterer info to get updated user data
+      const refreshedCatererInfo = await prisma.catererinfo.findUnique({
+        where: { id },
+        include: {
+          caterer: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              company_name: true,
+              image_url: true,
+              profile_completed: true,
+              verified: true,
+              created_at: true,
+            },
+          },
+        },
+      });
+
+      return refreshedCatererInfo;
+    }
+  }
+
   return updatedCatererInfo;
 };
 

@@ -189,10 +189,13 @@ export const submit = async (userId: string, data: OnboardingData) => {
     }
   }
 
-  // Update user type to CATERER upon successful onboarding submission
+  // Update user type to CATERER and company_name upon successful onboarding submission
   await prisma.user.update({
     where: { id: userId },
-    data: { type: "CATERER" },
+    data: { 
+      type: "CATERER",
+      company_name: data.business_name, // Set company_name from business_name
+    },
   });
 
   // TODO: Send email notification to admin
