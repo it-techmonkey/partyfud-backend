@@ -119,7 +119,10 @@ export const getAllDishesWithFilters = async (filters: DishFilters = {}) => {
       ? {
           id: dish.caterer.id,
           name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
-          location: dish.caterer.catererinfo?.service_area || dish.caterer.catererinfo?.region || null,
+          location: dish.caterer.catererinfo?.service_area || 
+            (Array.isArray(dish.caterer.catererinfo?.region) 
+              ? dish.caterer.catererinfo.region.join(', ') 
+              : dish.caterer.catererinfo?.region) || null,
         }
       : null,
     quantity_in_gm: dish.quantity_in_gm,
@@ -268,7 +271,10 @@ export const getAllDishesGroupedByCategory = async (filters: DishFilters = {}) =
         ? {
             id: dish.caterer.id,
             name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
-            location: dish.caterer.catererinfo?.service_area || dish.caterer.catererinfo?.region || null,
+            location: dish.caterer.catererinfo?.service_area || 
+            (Array.isArray(dish.caterer.catererinfo?.region) 
+              ? dish.caterer.catererinfo.region.join(', ') 
+              : dish.caterer.catererinfo?.region) || null,
           }
         : null,
       quantity_in_gm: dish.quantity_in_gm,
@@ -363,7 +369,10 @@ export const getDishById = async (dishId: string) => {
       ? {
           id: dish.caterer.id,
           name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
-          location: dish.caterer.catererinfo?.service_area || dish.caterer.catererinfo?.region || null,
+          location: dish.caterer.catererinfo?.service_area || 
+            (Array.isArray(dish.caterer.catererinfo?.region) 
+              ? dish.caterer.catererinfo.region.join(', ') 
+              : dish.caterer.catererinfo?.region) || null,
         }
       : null,
     quantity_in_gm: dish.quantity_in_gm,

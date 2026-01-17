@@ -169,7 +169,7 @@ export interface CatererInfoData {
   minimum_guests?: number;
   maximum_guests?: number;
   preparation_time?: number;
-  region?: string;
+  region?: string | string[];
   delivery_only?: boolean;
   delivery_plus_setup?: boolean;
   full_service?: boolean;
@@ -177,6 +177,7 @@ export interface CatererInfoData {
   servers?: number;
   food_license?: string;
   Registration?: string;
+  gallery_images?: string[];
   commission_rate?: number;
   caterer_id: string;
 }
@@ -201,6 +202,11 @@ export const createCatererInfo = async (data: CatererInfoData) => {
   const foodLicense = data.food_license ? String(data.food_license) : undefined;
   const registration = data.Registration ? String(data.Registration) : undefined;
 
+  // Normalize region to array format
+  const regionArray = Array.isArray(data.region) 
+    ? data.region 
+    : (data.region ? [data.region] : []);
+
   // Check if caterer info already exists
   const existingCatererInfo = await prisma.catererinfo.findUnique({
     where: { caterer_id: data.caterer_id },
@@ -220,7 +226,7 @@ export const createCatererInfo = async (data: CatererInfoData) => {
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
       preparation_time: data.preparation_time,
-      region: data.region,
+      region: regionArray,
       delivery_only: data.delivery_only ?? true,
       delivery_plus_setup: data.delivery_plus_setup ?? true,
       full_service: data.full_service ?? true,
@@ -260,7 +266,12 @@ export const updateCatererInfo = async (data: CatererInfoData) => {
   if (data.minimum_guests !== undefined) updateData.minimum_guests = data.minimum_guests;
   if (data.maximum_guests !== undefined) updateData.maximum_guests = data.maximum_guests;
   if (data.preparation_time !== undefined) updateData.preparation_time = data.preparation_time;
-  if (data.region !== undefined) updateData.region = data.region;
+  if (data.region !== undefined) {
+    // Normalize region to array format
+    updateData.region = Array.isArray(data.region) 
+      ? data.region 
+      : (data.region ? [data.region] : []);
+  }
   if (data.delivery_only !== undefined) updateData.delivery_only = data.delivery_only;
   if (data.delivery_plus_setup !== undefined) updateData.delivery_plus_setup = data.delivery_plus_setup;
   if (data.full_service !== undefined) updateData.full_service = data.full_service;
@@ -274,6 +285,9 @@ export const updateCatererInfo = async (data: CatererInfoData) => {
   }
   if (data.Registration !== undefined) {
     updateData.Registration = data.Registration ? String(data.Registration) : null;
+  }
+  if (data.gallery_images !== undefined) {
+    updateData.gallery_images = data.gallery_images;
   }
 
   // Update existing caterer info

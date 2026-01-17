@@ -156,7 +156,12 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
   if (data.service_area !== undefined) updateData.service_area = data.service_area;
   if (data.minimum_guests !== undefined) updateData.minimum_guests = data.minimum_guests;
   if (data.maximum_guests !== undefined) updateData.maximum_guests = data.maximum_guests;
-  if (data.region !== undefined) updateData.region = data.region;
+  if (data.region !== undefined) {
+    // Normalize region to array format
+    updateData.region = Array.isArray(data.region) 
+      ? data.region 
+      : (data.region ? [data.region] : []);
+  }
   if (data.delivery_only !== undefined) updateData.delivery_only = data.delivery_only;
   if (data.delivery_plus_setup !== undefined) updateData.delivery_plus_setup = data.delivery_plus_setup;
   if (data.full_service !== undefined) updateData.full_service = data.full_service;

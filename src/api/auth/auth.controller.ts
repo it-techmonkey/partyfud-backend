@@ -549,6 +549,50 @@ export const updateCatererInfo = async (
       registrationUrl = existingCatererInfo.Registration || undefined;
     }
 
+    // Handle gallery images uploads
+    let galleryImages: string[] = [];
+    
+    // Handle existing gallery images from body (if provided, these are the images to keep)
+    // Always use the provided list, even if empty (to allow deletion)
+    if (req.body.existing_gallery_images !== undefined) {
+      if (typeof req.body.existing_gallery_images === "string") {
+        // If it's a JSON string, parse it
+        try {
+          const parsed = JSON.parse(req.body.existing_gallery_images);
+          galleryImages = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          // If parsing fails, treat as single URL or empty
+          galleryImages = req.body.existing_gallery_images ? [req.body.existing_gallery_images] : [];
+        }
+      } else if (Array.isArray(req.body.existing_gallery_images)) {
+        galleryImages = req.body.existing_gallery_images;
+      } else {
+        galleryImages = [];
+      }
+    } else {
+      // If no existing images provided, keep current ones
+      galleryImages = existingCatererInfo.gallery_images || [];
+    }
+    
+    // Handle new gallery image uploads (add to existing images)
+    if (files?.gallery_images) {
+      const fileArray = Array.isArray(files.gallery_images) ? files.gallery_images : [files.gallery_images];
+      const uploadedUrls: string[] = [];
+      
+      for (const file of fileArray) {
+        try {
+          const imageUrl = await uploadToCloudinary(file, "partyfud/caterer-gallery");
+          uploadedUrls.push(imageUrl);
+        } catch (uploadError: any) {
+          console.error(`Gallery image upload failed: ${uploadError.message}`);
+          // Continue with other images even if one fails
+        }
+      }
+      
+      // Add new uploaded images to existing ones
+      galleryImages = [...galleryImages, ...uploadedUrls];
+    }
+
     const catererInfo = await authService.updateCatererInfo({
       business_name,
       business_type,
@@ -557,7 +601,18 @@ export const updateCatererInfo = async (
       minimum_guests: minimum_guests ? parseInt(minimum_guests) : undefined,
       maximum_guests: maximum_guests ? parseInt(maximum_guests) : undefined,
       preparation_time: preparation_time ? parseInt(preparation_time) : undefined,
-      region,
+      region: (() => {
+        // Handle region as JSON string or array
+        if (typeof region === 'string') {
+          try {
+            const parsed = JSON.parse(region);
+            return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+          } catch {
+            return region ? [region] : [];
+          }
+        }
+        return Array.isArray(region) ? region : (region ? [region] : []);
+      })(),
       delivery_only: delivery_only !== undefined ? delivery_only === "true" || delivery_only === true : undefined,
       delivery_plus_setup: delivery_plus_setup !== undefined ? delivery_plus_setup === "true" || delivery_plus_setup === true : undefined,
       full_service: full_service !== undefined ? full_service === "true" || full_service === true : undefined,
@@ -566,6 +621,7 @@ export const updateCatererInfo = async (
       commission_rate: commission_rate ? parseInt(commission_rate) : undefined,
       food_license: foodLicenseUrl,
       Registration: registrationUrl,
+      gallery_images: galleryImages,
       caterer_id: catererId,
     });
 

@@ -136,9 +136,11 @@ export const uploadCatererDocuments = (req: Request, res: Response, next: NextFu
   // Define fields as an array - this is CRITICAL for Multer to work
   // DO NOT use an object like { food_license: 1, Registration: 1 } - that will cause "e.map is not a function"
   // maxCount: 1 means only ONE file can be uploaded per field
+  // gallery_images can have multiple files (max 10)
   const fieldsArray = [
     { name: 'food_license', maxCount: 1 },
     { name: 'Registration', maxCount: 1 },
+    { name: 'gallery_images', maxCount: 10 },
   ];
   
   // Create the middleware using fields() with the array

@@ -208,7 +208,10 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
     caterer: {
       id: pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
-      location: pkg.caterer.catererinfo?.service_area || pkg.caterer.catererinfo?.region || null,
+      location: pkg.caterer.catererinfo?.service_area || 
+        (Array.isArray(pkg.caterer.catererinfo?.region) 
+          ? pkg.caterer.catererinfo.region.join(', ') 
+          : pkg.caterer.catererinfo?.region) || null,
     },
     items: pkg.items.map((item) => ({
       id: item.id,
@@ -488,7 +491,8 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
       locationFilters.push({ service_area: { contains: filters.location, mode: 'insensitive' } });
     }
     if (filters.region) {
-      locationFilters.push({ region: { contains: filters.region, mode: 'insensitive' } });
+      // Region is now an array, so we use hasSome to check if any region matches
+      locationFilters.push({ region: { hasSome: [filters.region] } });
     }
 
     packageWhere.caterer = {
@@ -621,7 +625,10 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
     caterer: {
       id: pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
-      location: pkg.caterer.catererinfo?.service_area || pkg.caterer.catererinfo?.region || null,
+      location: pkg.caterer.catererinfo?.service_area || 
+        (Array.isArray(pkg.caterer.catererinfo?.region) 
+          ? pkg.caterer.catererinfo.region.join(', ') 
+          : pkg.caterer.catererinfo?.region) || null,
     },
     items: pkg.items.map((item) => ({
       id: item.id,

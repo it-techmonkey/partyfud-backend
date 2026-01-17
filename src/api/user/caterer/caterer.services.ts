@@ -35,7 +35,8 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
 
   // Filter by location/region
   if (location && location !== "All") {
-    whereClause.region = location;
+    // Region is now an array, so we use hasSome to check if any region matches
+    whereClause.region = { hasSome: [location] };
   }
 
   // Build AND conditions array for complex filters
@@ -256,7 +257,9 @@ const formatCatererData = (caterer: any) => {
     phone: caterer.phone,
     image_url: caterer.image_url,
     cuisines: cuisineTypes,
-    location: caterer.catererinfo?.region || "Unknown",
+    location: Array.isArray(caterer.catererinfo?.region) 
+      ? caterer.catererinfo.region.join(', ') 
+      : (caterer.catererinfo?.region || "Unknown"),
     minPrice: minPricePerPerson,
     maxPrice: maxPricePerPerson,
     priceRange: `AED ${Math.round(minPricePerPerson)} – AED ${Math.round(maxPricePerPerson)}`,
@@ -273,6 +276,7 @@ const formatCatererData = (caterer: any) => {
     staff: caterer.catererinfo?.staff,
     servers: caterer.catererinfo?.servers,
     commission_rate: caterer.catererinfo?.commission_rate,
+    gallery_images: caterer.catererinfo?.gallery_images || [],
     packages: packages.map((pkg: any) => ({
       id: pkg.id,
       name: pkg.name,
@@ -436,7 +440,10 @@ export const getDishesByCatererId = async (catererId: string) => {
       ? {
           id: dish.caterer.id,
           name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
-          location: dish.caterer.catererinfo?.service_area || dish.caterer.catererinfo?.region || null,
+          location: dish.caterer.catererinfo?.service_area || 
+            (Array.isArray(dish.caterer.catererinfo?.region) 
+              ? dish.caterer.catererinfo.region.join(', ') 
+              : dish.caterer.catererinfo?.region) || null,
         }
       : null,
     quantity_in_gm: dish.quantity_in_gm,

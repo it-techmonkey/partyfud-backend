@@ -41,7 +41,7 @@ model catererinfo {
   service_area         String?
   minimum_guests       Int?
   maximum_guests       Int?
-  region               String?
+  region               String[]       @default([])
   cuisine_types        String[]       @default([])
   unavailable_dates    String[]       @default([])
   delivery_only        Boolean        @default(true)
@@ -52,6 +52,7 @@ model catererinfo {
   preparation_time     Int?
   food_license         String?
   Registration         String?
+  gallery_images       String[]       @default([])
   caterer_id           String         @unique
   status               Status         @default(PENDING)
   onboarding_step      Int            @default(0)

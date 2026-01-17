@@ -4,7 +4,7 @@ interface OnboardingData {
   business_name: string;
   business_type?: string;
   business_description?: string;
-  region?: string;
+  region?: string | string[];
   service_area?: string;
   minimum_guests?: number;
   maximum_guests?: number;
@@ -25,6 +25,11 @@ interface OnboardingData {
  * Save onboarding draft
  */
 export const saveDraft = async (userId: string, data: OnboardingData) => {
+  // Normalize region to array format
+  const regionArray = Array.isArray(data.region) 
+    ? data.region 
+    : (data.region ? [data.region] : []);
+
   // Use upsert to create or update caterer info
   // This handles both first-time onboarding and updating existing drafts
   const updated = await prisma.catererinfo.upsert({
@@ -34,7 +39,7 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
       business_name: data.business_name || "Draft",
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
-      region: data.region,
+      region: regionArray,
       service_area: data.service_area,
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
@@ -56,7 +61,7 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
       business_name: data.business_name || "Draft",
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
-      region: data.region,
+      region: regionArray,
       service_area: data.service_area,
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
@@ -112,8 +117,13 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
  * Submit onboarding for approval
  */
 export const submit = async (userId: string, data: OnboardingData) => {
+  // Normalize region to array format
+  const regionArray = Array.isArray(data.region) 
+    ? data.region 
+    : (data.region ? [data.region] : []);
+
   // Validate required fields for final submission
-  if (!data.business_name || !data.region || !data.minimum_guests || !data.maximum_guests) {
+  if (!data.business_name || regionArray.length === 0 || !data.minimum_guests || !data.maximum_guests) {
     throw new Error("Missing required fields: business_name, region, minimum_guests, and maximum_guests are required");
   }
 
@@ -125,7 +135,7 @@ export const submit = async (userId: string, data: OnboardingData) => {
       business_name: data.business_name,
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
-      region: data.region,
+      region: regionArray,
       service_area: data.service_area,
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
@@ -148,7 +158,7 @@ export const submit = async (userId: string, data: OnboardingData) => {
       business_name: data.business_name,
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
-      region: data.region,
+      region: regionArray,
       service_area: data.service_area,
       minimum_guests: data.minimum_guests,
       maximum_guests: data.maximum_guests,
