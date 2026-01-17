@@ -265,23 +265,66 @@ export const createPackage = async (
   }
 
   // If category_selections provided, validate categories exist
+  // Filter out 'uncategorized' as it's not a real category in the database
   if (category_selections && category_selections.length > 0) {
-    const categoryIds = category_selections.map(cs => cs.category_id);
-    const existingCategories = await prisma.category.findMany({
-      where: { id: { in: categoryIds } },
-    });
+    const categoryIds = category_selections
+      .map(cs => cs.category_id)
+      .filter(id => id && id !== 'uncategorized');
+    
+    if (categoryIds.length > 0) {
+      const existingCategories = await prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+      });
 
-    if (existingCategories.length !== categoryIds.length) {
-      throw new Error("One or more categories not found");
+      if (existingCategories.length !== categoryIds.length) {
+        throw new Error("One or more categories not found");
+      }
     }
   }
 
   // Calculate total_price from items if package_item_ids are provided
   // package_item_ids can be either PackageItem IDs or Dish IDs
+  // For CUSTOMISABLE packages with no dishes selected, create items for all dishes
   let calculatedPrice = data.total_price || 0;
   let packageItemIdsToLink: string[] = [];
   
-  if (package_item_ids && package_item_ids.length > 0) {
+  // For CUSTOMISABLE packages, if no dishes are selected, make all dishes available
+  if (customisationType === "CUSTOMISABLE" && (!package_item_ids || package_item_ids.length === 0)) {
+    // Get all dishes for this caterer
+    const allDishes = await prisma.dish.findMany({
+      where: {
+        caterer_id: catererId,
+        is_active: true,
+      },
+    });
+
+    if (allDishes.length > 0) {
+      // Create PackageItems for all dishes (users will select from these)
+      const createdItems = await Promise.all(
+        allDishes.map(dish =>
+          prisma.packageItem.create({
+            data: {
+              dish_id: dish.id,
+              caterer_id: catererId,
+              people_count: minimumPeople,
+              quantity: dish.pieces || 1,
+              price_at_time: dish.price,
+              is_optional: true, // All items are optional for user selection
+              is_addon: false,
+            },
+            include: {
+              dish: true,
+            },
+          })
+        )
+      );
+
+      packageItemIdsToLink = createdItems.map(item => item.id);
+      // For CUSTOMISABLE packages with all dishes available, price starts at 0
+      // It will be calculated based on user selections
+      calculatedPrice = 0;
+    }
+  } else if (package_item_ids && package_item_ids.length > 0) {
     // First, try to find existing PackageItems
     const existingItems = await prisma.packageItem.findMany({
       where: {
@@ -394,14 +437,21 @@ export const createPackage = async (
   }
 
   // Create category selections if provided (only for CUSTOMISABLE packages)
+  // Filter out 'uncategorized' as it's not a real category in the database
   if (category_selections && category_selections.length > 0 && customisationType === "CUSTOMISABLE") {
-    await prisma.packageCategorySelection.createMany({
-      data: category_selections.map(cs => ({
-        package_id: packageData.id,
-        category_id: cs.category_id,
-        num_dishes_to_select: cs.num_dishes_to_select,
-      })),
-    });
+    const validCategorySelections = category_selections.filter(
+      cs => cs.category_id && cs.category_id !== 'uncategorized'
+    );
+    
+    if (validCategorySelections.length > 0) {
+      await prisma.packageCategorySelection.createMany({
+        data: validCategorySelections.map(cs => ({
+          package_id: packageData.id,
+          category_id: cs.category_id,
+          num_dishes_to_select: cs.num_dishes_to_select,
+        })),
+      });
+    }
   }
 
   // Create occasions if provided
@@ -481,14 +531,20 @@ export const updatePackage = async (
   }
 
   // If category_selections provided, validate categories exist
+  // Filter out 'uncategorized' as it's not a real category in the database
   if (category_selections && category_selections.length > 0) {
-    const categoryIds = category_selections.map(cs => cs.category_id);
-    const existingCategories = await prisma.category.findMany({
-      where: { id: { in: categoryIds } },
-    });
+    const categoryIds = category_selections
+      .map(cs => cs.category_id)
+      .filter(id => id && id !== 'uncategorized');
+    
+    if (categoryIds.length > 0) {
+      const existingCategories = await prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+      });
 
-    if (existingCategories.length !== categoryIds.length) {
-      throw new Error("One or more categories not found");
+      if (existingCategories.length !== categoryIds.length) {
+        throw new Error("One or more categories not found");
+      }
     }
   }
 
@@ -621,14 +677,21 @@ export const updatePackage = async (
     });
 
     // Create new category selections if provided and package is CUSTOMISABLE
+    // Filter out 'uncategorized' as it's not a real category in the database
     if (category_selections.length > 0 && customisationType === "CUSTOMISABLE") {
-      await prisma.packageCategorySelection.createMany({
-        data: category_selections.map(cs => ({
-          package_id: packageId,
-          category_id: cs.category_id,
-          num_dishes_to_select: cs.num_dishes_to_select,
-        })),
-      });
+      const validCategorySelections = category_selections.filter(
+        cs => cs.category_id && cs.category_id !== 'uncategorized'
+      );
+      
+      if (validCategorySelections.length > 0) {
+        await prisma.packageCategorySelection.createMany({
+          data: validCategorySelections.map(cs => ({
+            package_id: packageId,
+            category_id: cs.category_id,
+            num_dishes_to_select: cs.num_dishes_to_select,
+          })),
+        });
+      }
     }
   }
 

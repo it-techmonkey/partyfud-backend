@@ -230,7 +230,9 @@ export const createPackage = async (
     }
 
     // Validate that package items are provided if total_price is not provided
-    if (!parsedTotalPrice && (!parsedPackageItemIds || parsedPackageItemIds.length === 0)) {
+    // Exception: CUSTOMISABLE packages can be created without dishes (all dishes will be made available)
+    const isCustomisable = parsedCustomisationType === 'CUSTOMISABLE';
+    if (!parsedTotalPrice && (!parsedPackageItemIds || parsedPackageItemIds.length === 0) && !isCustomisable) {
       res.status(400).json({
         success: false,
         error: {
