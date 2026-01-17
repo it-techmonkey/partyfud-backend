@@ -17,6 +17,8 @@ interface OnboardingData {
   preparation_time?: number;
   staff?: number;
   servers?: number;
+  food_license?: string;
+  Registration?: string;
 }
 
 /**
@@ -44,6 +46,8 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
       preparation_time: data.preparation_time || 24,
       staff: data.staff || 0,
       servers: data.servers || 0,
+      food_license: data.food_license,
+      Registration: data.Registration,
       has_draft: true,
       onboarding_step: 4,
       status: "PENDING",
@@ -64,6 +68,8 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
       preparation_time: data.preparation_time || 24,
       staff: data.staff || 0,
       servers: data.servers || 0,
+      food_license: data.food_license,
+      Registration: data.Registration,
       has_draft: true,
       onboarding_step: 4,
     },
@@ -131,6 +137,8 @@ export const submit = async (userId: string, data: OnboardingData) => {
       preparation_time: data.preparation_time || 24,
       staff: data.staff || 0,
       servers: data.servers || 0,
+      food_license: data.food_license,
+      Registration: data.Registration,
       status: "PENDING",
       onboarding_completed: true,
       has_draft: false,
@@ -152,6 +160,8 @@ export const submit = async (userId: string, data: OnboardingData) => {
       preparation_time: data.preparation_time || 24,
       staff: data.staff || 0,
       servers: data.servers || 0,
+      food_license: data.food_license,
+      Registration: data.Registration,
       status: "PENDING",
       onboarding_completed: true,
       has_draft: false,
@@ -246,5 +256,7 @@ export const getStatus = async (userId: string) => {
     certifications: catererInfo.certifications.map(
       (cc) => cc.certification.name
     ),
+    food_license: catererInfo.food_license,
+    Registration: catererInfo.Registration,
   };
 };

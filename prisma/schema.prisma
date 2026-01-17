@@ -132,7 +132,7 @@ model Dish {
   name            String
   image_url       String?
   cuisine_type_id String
-  category_id     String
+  category_id     String?
   sub_category_id String?
   caterer_id      String?
   quantity_in_gm  Int?
@@ -142,7 +142,7 @@ model Dish {
   is_active       Boolean        @default(true)
   created_at      DateTime       @default(now())
   updated_at      DateTime       @updatedAt
-  category        Category       @relation(fields: [category_id], references: [id])
+  category        Category?      @relation(fields: [category_id], references: [id])
   cuisine_type    CuisineType    @relation(fields: [cuisine_type_id], references: [id])
   sub_category    SubCategory?   @relation(fields: [sub_category_id], references: [id])
   caterer         User?          @relation(fields: [caterer_id], references: [id], onDelete: Cascade)

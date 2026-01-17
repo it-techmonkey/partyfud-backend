@@ -103,11 +103,11 @@ export const getAllDishesWithFilters = async (filters: DishFilters = {}) => {
       name: dish.cuisine_type.name,
       description: dish.cuisine_type.description,
     },
-    category: {
+    category: dish.category ? {
       id: dish.category.id,
       name: dish.category.name,
       description: dish.category.description,
-    },
+    } : null,
     sub_category: dish.sub_category
       ? {
           id: dish.sub_category.id,
@@ -252,11 +252,11 @@ export const getAllDishesGroupedByCategory = async (filters: DishFilters = {}) =
         name: dish.cuisine_type.name,
         description: dish.cuisine_type.description,
       },
-      category: {
+      category: dish.category ? {
         id: dish.category.id,
         name: dish.category.name,
         description: dish.category.description,
-      },
+      } : null,
       sub_category: dish.sub_category
         ? {
             id: dish.sub_category.id,
@@ -347,11 +347,11 @@ export const getDishById = async (dishId: string) => {
       name: dish.cuisine_type.name,
       description: dish.cuisine_type.description,
     },
-    category: {
+    category: dish.category ? {
       id: dish.category.id,
       name: dish.category.name,
       description: dish.category.description,
-    },
+    } : null,
     sub_category: dish.sub_category
       ? {
           id: dish.sub_category.id,

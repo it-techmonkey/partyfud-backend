@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as onboardingController from "./onboarding.controller";
 import { authenticate } from "../../auth/auth.middleware";
+import { upload } from "../../../middleware/upload";
 
 const router = Router();
 
@@ -24,5 +25,11 @@ router.post("/submit", onboardingController.submit);
  * GET /api/caterer/onboarding/status
  */
 router.get("/status", onboardingController.getStatus);
+
+/**
+ * Upload document (food license or registration)
+ * POST /api/caterer/onboarding/upload-document
+ */
+router.post("/upload-document", upload.single('file'), onboardingController.uploadDocument);
 
 export default router;

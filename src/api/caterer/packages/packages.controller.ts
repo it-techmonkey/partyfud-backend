@@ -185,7 +185,7 @@ export const createPackage = async (
     // Parse customisation_type
     const parsedCustomisationType = customisation_type === "CUSTOMISABLE" ? "CUSTOMISABLE" : "FIXED";
 
-    // Parse category_selections (only for FIXED packages)
+    // Parse category_selections (only for CUSTOMISABLE packages)
     let parsedCategorySelections: Array<{ category_id: string; num_dishes_to_select: number | null }> | undefined;
     if (category_selections) {
       if (Array.isArray(category_selections)) {

@@ -19,7 +19,7 @@ export interface CreatePackageData {
   customisation_type?: "FIXED" | "CUSTOMISABLE";
   additional_info?: string; // Extra pricing and services information
   package_item_ids?: string[]; // Array of package item IDs to link to this package
-  category_selections?: CategorySelection[]; // Only allowed for FIXED packages
+  category_selections?: CategorySelection[]; // Only allowed for CUSTOMISABLE packages
   occassion?: string[]; // Array of occasion IDs
 }
 
@@ -35,7 +35,7 @@ export interface UpdatePackageData {
   is_available?: boolean;
   customisation_type?: "FIXED" | "CUSTOMISABLE";
   additional_info?: string; // Extra pricing and services information
-  category_selections?: CategorySelection[]; // Only allowed for FIXED packages
+  category_selections?: CategorySelection[]; // Only allowed for CUSTOMISABLE packages
   occassion?: string[]; // Array of occasion IDs
   package_item_ids?: string[]; // Array of package item IDs
 }
@@ -258,10 +258,10 @@ export const createPackage = async (
   // Extract package_item_ids, category_selections, and occassion before creating package (they're not Package fields)
   const { package_item_ids, category_selections, occassion, ...packageDataWithoutItems } = data;
 
-  // Validate category_selections: only allowed for FIXED packages
+  // Validate category_selections: only allowed for CUSTOMISABLE packages
   const customisationType = data.customisation_type || "FIXED";
-  if (category_selections && category_selections.length > 0 && customisationType !== "FIXED") {
-    throw new Error("Category selections are only allowed for FIXED packages");
+  if (category_selections && category_selections.length > 0 && customisationType !== "CUSTOMISABLE") {
+    throw new Error("Category selections are only allowed for CUSTOMISABLE packages");
   }
 
   // If category_selections provided, validate categories exist
@@ -393,8 +393,8 @@ export const createPackage = async (
     });
   }
 
-  // Create category selections if provided (only for FIXED packages)
-  if (category_selections && category_selections.length > 0 && customisationType === "FIXED") {
+  // Create category selections if provided (only for CUSTOMISABLE packages)
+  if (category_selections && category_selections.length > 0 && customisationType === "CUSTOMISABLE") {
     await prisma.packageCategorySelection.createMany({
       data: category_selections.map(cs => ({
         package_id: packageData.id,
@@ -475,9 +475,9 @@ export const updatePackage = async (
   // Determine customisation type (use existing if not provided)
   const customisationType = data.customisation_type || existingPackage.customisation_type || "FIXED";
 
-  // Validate category_selections: only allowed for FIXED packages
-  if (category_selections && category_selections.length > 0 && customisationType !== "FIXED") {
-    throw new Error("Category selections are only allowed for FIXED packages");
+  // Validate category_selections: only allowed for CUSTOMISABLE packages
+  if (category_selections && category_selections.length > 0 && customisationType !== "CUSTOMISABLE") {
+    throw new Error("Category selections are only allowed for CUSTOMISABLE packages");
   }
 
   // If category_selections provided, validate categories exist
@@ -620,8 +620,8 @@ export const updatePackage = async (
       where: { package_id: packageId },
     });
 
-    // Create new category selections if provided and package is FIXED
-    if (category_selections.length > 0 && customisationType === "FIXED") {
+    // Create new category selections if provided and package is CUSTOMISABLE
+    if (category_selections.length > 0 && customisationType === "CUSTOMISABLE") {
       await prisma.packageCategorySelection.createMany({
         data: category_selections.map(cs => ({
           package_id: packageId,

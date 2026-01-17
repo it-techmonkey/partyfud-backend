@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as onboardingService from "./onboarding.services";
+import { uploadFileToCloudinary } from "../../../lib/cloudinary";
 
 /**
  * Save onboarding draft
@@ -110,6 +111,62 @@ export const getStatus = async (
     res.status(500).json({
       success: false,
       error: { message: error.message || "Failed to fetch status" },
+    });
+  }
+};
+
+/**
+ * Upload document (food license or registration)
+ * POST /api/caterer/onboarding/upload-document
+ */
+export const uploadDocument = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Unauthorized" },
+      });
+      return;
+    }
+
+    if (!(req as any).file) {
+      res.status(400).json({
+        success: false,
+        error: { message: "No file uploaded" },
+      });
+      return;
+    }
+
+    const field = req.body.field;
+    if (!field || (field !== 'food_license' && field !== 'Registration')) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid field. Must be 'food_license' or 'Registration'" },
+      });
+      return;
+    }
+
+    // Upload file to Cloudinary
+    const fileUrl = await uploadFileToCloudinary((req as any).file, 'partyfud/documents');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        url: fileUrl,
+        field: field,
+      },
+      message: "Document uploaded successfully",
+    });
+  } catch (error: any) {
+    console.error("Error uploading document:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || "Failed to upload document" },
     });
   }
 };

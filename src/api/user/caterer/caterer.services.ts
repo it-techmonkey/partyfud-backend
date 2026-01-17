@@ -240,7 +240,9 @@ const formatCatererData = (caterer: any) => {
   // Get unique cuisine types from dishes
   const cuisineTypes = [
     ...new Set(
-      caterer.dishes.map((dish: any) => dish.cuisine_type.name)
+      caterer.dishes
+        .filter((dish: any) => dish.cuisine_type?.name)
+        .map((dish: any) => dish.cuisine_type.name)
     ),
   ];
 
@@ -292,8 +294,8 @@ const formatCatererData = (caterer: any) => {
       currency: dish.currency,
       quantity_in_gm: dish.quantity_in_gm,
       pieces: dish.pieces,
-      cuisine_type: dish.cuisine_type.name,
-      category: dish.category.name,
+      cuisine_type: dish.cuisine_type?.name || null,
+      category: dish.category?.name || null,
     })),
   };
 };
@@ -413,16 +415,16 @@ export const getDishesByCatererId = async (catererId: string) => {
     id: dish.id,
     name: dish.name,
     image_url: dish.image_url,
-    cuisine_type: {
+    cuisine_type: dish.cuisine_type ? {
       id: dish.cuisine_type.id,
       name: dish.cuisine_type.name,
       description: dish.cuisine_type.description,
-    },
-    category: {
+    } : null,
+    category: dish.category ? {
       id: dish.category.id,
       name: dish.category.name,
       description: dish.category.description,
-    },
+    } : null,
     sub_category: dish.sub_category
       ? {
           id: dish.sub_category.id,

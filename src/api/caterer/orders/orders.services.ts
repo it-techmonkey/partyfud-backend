@@ -106,10 +106,10 @@ export const getOrdersForCaterer = async (catererId: string) => {
             image_url: pi.dish.image_url,
             price: Number(pi.dish.price),
             currency: pi.dish.currency,
-            category: {
+            category: pi.dish.category ? {
               id: pi.dish.category.id,
               name: pi.dish.category.name,
-            },
+            } : null,
             cuisine_type: {
               id: pi.dish.cuisine_type.id,
               name: pi.dish.cuisine_type.name,
@@ -232,10 +232,10 @@ export const getOrderByIdForCaterer = async (catererId: string, orderId: string)
             image_url: pi.dish.image_url,
             price: Number(pi.dish.price),
             currency: pi.dish.currency,
-            category: {
+            category: pi.dish.category ? {
               id: pi.dish.category.id,
               name: pi.dish.category.name,
-            },
+            } : null,
             cuisine_type: {
               id: pi.dish.cuisine_type.id,
               name: pi.dish.cuisine_type.name,
@@ -378,10 +378,10 @@ export const updateOrderStatus = async (
             image_url: pi.dish.image_url,
             price: Number(pi.dish.price),
             currency: pi.dish.currency,
-            category: {
+            category: pi.dish.category ? {
               id: pi.dish.category.id,
               name: pi.dish.category.name,
-            },
+            } : null,
             cuisine_type: {
               id: pi.dish.cuisine_type.id,
               name: pi.dish.cuisine_type.name,

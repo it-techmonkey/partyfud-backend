@@ -146,12 +146,12 @@ export const createDish = async (
       : (typeof is_active === 'boolean' ? is_active : true);
 
     // Validate required fields
-    if (!name || !cuisine_type_id || !category_id || !parsedPrice) {
+    if (!name || !cuisine_type_id || !parsedPrice) {
       res.status(400).json({
         success: false,
         error: {
           message:
-            "Missing required fields: name, cuisine_type_id, category_id, price",
+            "Missing required fields: name, cuisine_type_id, price",
         },
       });
       return;
@@ -169,26 +169,39 @@ export const createDish = async (
       return;
     }
 
-    const category = await prisma.category.findUnique({
-      where: { id: category_id },
-    });
-    if (!category) {
-      res.status(400).json({
-        success: false,
-        error: { message: `Category with ID "${category_id}" not found` },
+    // Category is optional
+    let category = null;
+    if (category_id) {
+      category = await prisma.category.findUnique({
+        where: { id: category_id },
       });
-      return;
+      if (!category) {
+        res.status(400).json({
+          success: false,
+          error: { message: `Category with ID "${category_id}" not found` },
+        });
+        return;
+      }
     }
 
-    // Check if category has subcategories
-    const subCategoriesCount = await prisma.subCategory.count({
-      where: { category_id: category_id },
-    });
-
-    const hasSubCategories = subCategoriesCount > 0;
+    // Check if category has subcategories (only if category is provided)
+    let hasSubCategories = false;
+    if (category_id) {
+      const subCategoriesCount = await prisma.subCategory.count({
+        where: { category_id: category_id },
+      });
+      hasSubCategories = subCategoriesCount > 0;
+    }
 
     let subCategory = null;
     if (sub_category_id) {
+      if (!category_id) {
+        res.status(400).json({
+          success: false,
+          error: { message: `Sub category requires a category to be selected` },
+        });
+        return;
+      }
       subCategory = await prisma.subCategory.findUnique({
         where: { id: sub_category_id },
       });
@@ -229,7 +242,6 @@ export const createDish = async (
       name,
       image_url,
       cuisine_type: cuisineType.name,
-      category: category.name,
       quantity_in_gm: parsedQuantityInGm,
       pieces: parsedPieces,
       price: parsedPrice,
@@ -237,6 +249,11 @@ export const createDish = async (
       is_active: parsedIsActive,
       freeform_ids: freeformIdsArray,
     };
+
+    // Only include category if it exists
+    if (category) {
+      dishData.category = category.name;
+    }
 
     // Only include sub_category if subCategory exists
     if (subCategory) {
