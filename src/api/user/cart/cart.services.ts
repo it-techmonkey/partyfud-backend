@@ -41,6 +41,9 @@ export interface CreateCartItemInput {
   location?: string;
   guests?: number;
   date?: Date;
+  event_time?: string;
+  event_type?: string;
+  area?: string;
   price_at_time?: number;
 }
 
@@ -91,6 +94,9 @@ export const createCartItem = async (
       location: input.location,
       guests: input.guests,
       date: input.date,
+      event_time: input.event_time,
+      event_type: input.event_type,
+      area: input.area,
       price_at_time: price,
     },
     include: {
@@ -123,6 +129,9 @@ export const createCartItem = async (
     location: cartItem.location,
     guests: cartItem.guests,
     date: cartItem.date,
+    event_time: cartItem.event_time,
+    event_type: cartItem.event_type,
+    area: cartItem.area,
     price_at_time: cartItem.price_at_time ? Number(cartItem.price_at_time) : null,
     created_at: cartItem.created_at,
     updated_at: cartItem.updated_at,
@@ -136,6 +145,9 @@ export interface UpdateCartItemInput {
   location?: string;
   guests?: number;
   date?: Date;
+  event_time?: string;
+  event_type?: string;
+  area?: string;
   price_at_time?: number;
 }
 
@@ -171,6 +183,9 @@ export const updateCartItem = async (
       location: input.location !== undefined ? input.location : cartItem.location,
       guests: input.guests !== undefined ? input.guests : cartItem.guests,
       date: input.date !== undefined ? input.date : cartItem.date,
+      event_time: input.event_time !== undefined ? input.event_time : cartItem.event_time,
+      event_type: input.event_type !== undefined ? input.event_type : cartItem.event_type,
+      area: input.area !== undefined ? input.area : cartItem.area,
       price_at_time:
         input.price_at_time !== undefined
           ? input.price_at_time
@@ -206,6 +221,9 @@ export const updateCartItem = async (
     location: updatedCartItem.location,
     guests: updatedCartItem.guests,
     date: updatedCartItem.date,
+    event_time: updatedCartItem.event_time,
+    event_type: updatedCartItem.event_type,
+    area: updatedCartItem.area,
     price_at_time: updatedCartItem.price_at_time
       ? Number(updatedCartItem.price_at_time)
       : null,
@@ -292,6 +310,9 @@ export const getCartItems = async (userId: string) => {
     location: item.location,
     guests: item.guests,
     date: item.date,
+    event_time: item.event_time,
+    event_type: item.event_type,
+    area: item.area,
     price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
     created_at: item.created_at,
     updated_at: item.updated_at,

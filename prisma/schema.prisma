@@ -271,6 +271,9 @@ model CartItem {
   location        String?
   guests          Int?
   date            DateTime?
+  event_time      String?      // Event time (e.g., "10:00 AM")
+  event_type      String?      // Event type/occasion ID
+  area            String?      // Delivery area
   price_at_time   Decimal?     @db.Decimal(10, 2)
   cart            Cart         @relation(fields: [cart_id], references: [id], onDelete: Cascade)
   package         Package      @relation(fields: [package_id], references: [id])

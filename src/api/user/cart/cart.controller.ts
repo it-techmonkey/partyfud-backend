@@ -22,7 +22,7 @@ export const createCartItem = async (
       return;
     }
 
-    const { package_id, location, guests, date, price_at_time } =
+    const { package_id, location, guests, date, event_time, event_type, area, price_at_time } =
       req.body;
 
     if (!package_id) {
@@ -40,6 +40,9 @@ export const createCartItem = async (
       location,
       guests,
       date: date ? new Date(date) : undefined,
+      event_time,
+      event_type,
+      area,
       price_at_time,
     });
 
@@ -96,12 +99,15 @@ export const updateCartItem = async (
       return;
     }
 
-    const { location, guests, date, price_at_time } = req.body;
+    const { location, guests, date, event_time, event_type, area, price_at_time } = req.body;
 
     const updatedCartItem = await cartService.updateCartItem(user.userId, cartItemId, {
       location,
       guests,
       date: date ? new Date(date) : undefined,
+      event_time,
+      event_type,
+      area,
       price_at_time,
     });
 
