@@ -138,7 +138,7 @@ model Dish {
   caterer_id      String?
   quantity_in_gm  Int?
   pieces          Int            @default(1)
-  price           Decimal        @db.Decimal(10, 2)
+  price           Int
   currency        String         @default("AED")
   is_active       Boolean        @default(true)
   created_at      DateTime       @default(now())
@@ -186,7 +186,8 @@ model Package {
   description         String?                    @db.Text // Package description
   minimum_people       Int                       @map("people_count") // Minimum number of people for this package (mapped to people_count until migration runs)
   cover_image_url     String?
-  total_price         Decimal                    @db.Decimal(10, 2) // Calculated from dishes: sum of (dish.price * minimum_people * quantity) for all items
+  total_price         Int                    // Price set by caterer or calculated from dishes: sum of (dish.price * minimum_people * quantity) for all items
+  is_custom_price     Boolean                    @default(false) // True if price was manually set by caterer (won't scale with guest count)
   currency            String                     @default("AED")
   rating              Float?
   is_active           Boolean                    @default(true)
@@ -220,7 +221,7 @@ model PackageItem {
   people_count  Int
   is_optional   Boolean  @default(false)
   quantity      Int      @default(1)
-  price_at_time Decimal? @db.Decimal(10, 2)
+  price_at_time Int?
   is_addon      Boolean  @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
@@ -285,7 +286,7 @@ model Order {
   id          String      @id @default(uuid())
   user_id     String
   user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  total_price Decimal     @db.Decimal(10, 2)
+  total_price Int
   currency    String      @default("AED")
   status      OrderStatus @default(PENDING)
   created_at  DateTime    @default(now())
@@ -331,7 +332,7 @@ model Proposal {
   event_type          String?
   location            String?
   dietary_preferences String[]       @default([]) // Array of dietary preference strings
-  budget_per_person   Decimal?       @db.Decimal(10, 2)
+  budget_per_person   Int?
   event_date          DateTime?
   vision              String?        @db.Text
   guest_count         Int

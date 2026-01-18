@@ -138,8 +138,8 @@ export const createDish = async (
       : 1;
 
     const parsedPrice = typeof price === 'string' 
-      ? parseFloat(price) 
-      : (typeof price === 'number' ? price : 0);
+      ? parseInt(price, 10) 
+      : (typeof price === 'number' ? Math.round(price) : 0);
 
     const parsedIsActive = typeof is_active === 'string'
       ? is_active === 'true' || is_active === '1'
@@ -330,7 +330,7 @@ export const updateDish = async (
       : undefined;
 
     const parsedPrice = price !== undefined
-      ? (typeof price === 'string' ? parseFloat(price) : price)
+      ? (typeof price === 'string' ? parseInt(price, 10) : Math.round(price))
       : undefined;
 
     const parsedIsActive = is_active !== undefined

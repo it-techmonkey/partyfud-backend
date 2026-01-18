@@ -68,6 +68,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
       people_count: minimumPeople, // Keep for backward compatibility
       cover_image_url: pkg.cover_image_url,
       total_price: Number(pkg.total_price),
+      is_custom_price: pkg.is_custom_price ?? false, // Include is_custom_price flag
       price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: pkg.currency,
     rating: pkg.rating,
@@ -328,6 +329,7 @@ export const getPackageById = async (packageId: string) => {
     description: pkg.description,
     cover_image_url: pkg.cover_image_url,
     total_price: Number(pkg.total_price),
+    is_custom_price: pkg.is_custom_price ?? false, // Include is_custom_price flag
     price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: pkg.currency,
     rating: pkg.rating,
@@ -617,6 +619,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
       people_count: minimumPeople, // Keep for backward compatibility
       cover_image_url: pkg.cover_image_url,
       total_price: Number(pkg.total_price),
+      is_custom_price: pkg.is_custom_price ?? false, // Include is_custom_price flag
       price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
     currency: pkg.currency,
     rating: pkg.rating,

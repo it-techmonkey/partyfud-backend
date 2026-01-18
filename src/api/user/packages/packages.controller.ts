@@ -122,11 +122,11 @@ export const getAllPackages = async (
     }
 
     if (req.query.min_price) {
-      filters.min_price = parseFloat(req.query.min_price as string);
+      filters.min_price = parseInt(req.query.min_price as string, 10);
     }
 
     if (req.query.max_price) {
-      filters.max_price = parseFloat(req.query.max_price as string);
+      filters.max_price = parseInt(req.query.max_price as string, 10);
     }
 
     if (req.query.occasion_id && typeof req.query.occasion_id === 'string') {
@@ -404,11 +404,11 @@ export const getMyPackages = async (
     }
 
     if (req.query.min_price) {
-      filters.min_price = parseFloat(req.query.min_price as string);
+      filters.min_price = parseInt(req.query.min_price as string, 10);
     }
 
     if (req.query.max_price) {
-      filters.max_price = parseFloat(req.query.max_price as string);
+      filters.max_price = parseInt(req.query.max_price as string, 10);
     }
 
     if (req.query.min_guests) {

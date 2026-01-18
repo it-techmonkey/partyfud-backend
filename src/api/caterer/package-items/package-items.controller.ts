@@ -34,7 +34,7 @@ export const createPackageItem = async (
       : undefined;
 
     const parsedPriceAtTime = price_at_time !== undefined
-      ? (typeof price_at_time === 'string' ? parseFloat(price_at_time) : price_at_time)
+      ? (typeof price_at_time === 'string' ? parseInt(price_at_time, 10) : Math.round(price_at_time))
       : undefined;
 
     const parsedIsOptional = is_optional !== undefined
@@ -208,7 +208,7 @@ export const updatePackageItem = async (
       : undefined;
 
     const parsedPriceAtTime = price_at_time !== undefined
-      ? (typeof price_at_time === 'string' ? parseFloat(price_at_time) : price_at_time)
+      ? (typeof price_at_time === 'string' ? parseInt(price_at_time, 10) : Math.round(price_at_time))
       : undefined;
 
     const parsedIsOptional = is_optional !== undefined

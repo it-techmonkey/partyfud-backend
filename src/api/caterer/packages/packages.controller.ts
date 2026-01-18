@@ -118,6 +118,7 @@ export const createPackage = async (
       description,
       minimum_people,
       total_price,
+      is_custom_price, // True if total_price was manually set by caterer
       currency,
       rating,
       is_active,
@@ -134,9 +135,16 @@ export const createPackage = async (
       ? (typeof minimum_people === 'string' ? parseInt(minimum_people, 10) : (typeof minimum_people === 'number' ? minimum_people : undefined))
       : undefined;
 
-    const parsedTotalPrice = total_price !== undefined
-      ? (typeof total_price === 'string' ? parseFloat(total_price) : (typeof total_price === 'number' ? total_price : undefined))
+    const parsedTotalPrice = total_price !== undefined && total_price !== null && total_price !== ''
+      ? (typeof total_price === 'string' ? parseInt(total_price, 10) : (typeof total_price === 'number' ? Math.round(total_price) : undefined))
       : undefined;
+
+    // Parse is_custom_price - true if caterer explicitly set a custom price
+    const parsedIsCustomPrice = is_custom_price !== undefined
+      ? (typeof is_custom_price === 'string'
+        ? is_custom_price === 'true' || is_custom_price === '1'
+        : !!is_custom_price)
+      : (parsedTotalPrice !== undefined); // If total_price is provided, assume it's custom
 
     const parsedRating = rating !== undefined
       ? (typeof rating === 'string' ? parseFloat(rating) : rating)
@@ -249,6 +257,7 @@ export const createPackage = async (
       minimum_people: parsedMinimumPeople,
       cover_image_url,
       total_price: parsedTotalPrice,
+      is_custom_price: parsedIsCustomPrice, // Track if price was manually set
       currency,
       rating: parsedRating,
       is_active: parsedIsActive,
@@ -310,6 +319,7 @@ export const updatePackage = async (
       description,
       minimum_people,
       total_price,
+      is_custom_price, // True if total_price was manually set by caterer
       currency,
       rating,
       is_active,
@@ -344,8 +354,11 @@ export const updatePackage = async (
       if (Array.isArray(package_item_ids)) {
         parsedPackageItemIds = package_item_ids;
       } else if (typeof package_item_ids === 'string') {
-        // Could be comma-separated or JSON
-        if (package_item_ids.trim().startsWith('[')) {
+        // Handle empty string as empty array (for CUSTOMISABLE packages without dishes)
+        if (package_item_ids.trim() === '') {
+          parsedPackageItemIds = [];
+        } else if (package_item_ids.trim().startsWith('[')) {
+          // Could be JSON array
           try {
             const parsed = JSON.parse(package_item_ids);
             if (Array.isArray(parsed)) {
@@ -356,6 +369,7 @@ export const updatePackage = async (
             parsedPackageItemIds = package_item_ids.split(',').map(id => id.trim()).filter(Boolean);
           }
         } else {
+          // Comma-separated string
           parsedPackageItemIds = package_item_ids.split(',').map(id => id.trim()).filter(Boolean);
         }
       }
@@ -404,6 +418,25 @@ export const updatePackage = async (
       }
     }
 
+    // Parse total_price
+    let parsedTotalPrice: number | undefined;
+    if (total_price !== undefined && total_price !== null && total_price !== '') {
+      parsedTotalPrice = typeof total_price === 'string' 
+        ? parseInt(total_price, 10) 
+        : Math.round(total_price);
+    }
+
+    // Parse is_custom_price - true if caterer explicitly set a custom price
+    let parsedIsCustomPrice: boolean | undefined;
+    if (is_custom_price !== undefined) {
+      parsedIsCustomPrice = typeof is_custom_price === 'string'
+        ? is_custom_price === 'true' || is_custom_price === '1'
+        : !!is_custom_price;
+    } else if (parsedTotalPrice !== undefined) {
+      // If total_price is provided, assume it's custom
+      parsedIsCustomPrice = true;
+    }
+
     const packageData = await packagesService.updatePackage(
       packageId,
       catererId,
@@ -412,7 +445,8 @@ export const updatePackage = async (
         description,
         minimum_people: parsedMinimumPeople,
         cover_image_url,
-        total_price: total_price !== undefined ? parseFloat(total_price) : undefined,
+        total_price: parsedTotalPrice,
+        is_custom_price: parsedIsCustomPrice, // Track if price was manually set
         currency,
         rating: rating !== undefined ? parseFloat(rating) : undefined,
         is_active: is_active !== undefined ? is_active === 'true' || is_active === true : undefined,
