@@ -3,6 +3,8 @@ import prisma from "../../../lib/prisma";
 export interface FilterCaterersParams {
   location?: string;
   guests?: number;
+  minGuests?: number; // Minimum guest count
+  maxGuests?: number; // Maximum guest count
   date?: string; // ISO date string
   minBudget?: number;
   maxBudget?: number;
@@ -12,6 +14,8 @@ export interface FilterCaterersParams {
     liveStations?: boolean;
   };
   search?: string;
+  occasionId?: string; // Filter by occasion ID
+  dietaryNeeds?: string[]; // Array of dietary need IDs
 }
 
 /**
@@ -21,11 +25,15 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
   const {
     location,
     guests,
+    minGuests,
+    maxGuests,
     date,
     minBudget,
     maxBudget,
     menuType,
     search,
+    occasionId,
+    dietaryNeeds,
   } = params;
 
   // Build where clause for catererinfo
@@ -43,7 +51,40 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
   const andConditions: any[] = [];
 
   // Filter by guest count (check if caterer can handle the number of guests)
-  if (guests) {
+  // Support both single guest count and min/max range
+  if ((minGuests !== undefined && minGuests > 0) || (maxGuests !== undefined && maxGuests > 0)) {
+    // For ranges to overlap: caterer.min <= user.max AND caterer.max >= user.min
+    const guestConditions: any[] = [];
+    
+    // If minGuests is provided: caterer must be able to handle at least this many
+    // This means: caterer.maximum_guests >= minGuests (caterer can handle at least minGuests)
+    if (minGuests !== undefined && minGuests > 0) {
+      guestConditions.push({
+        OR: [
+          { maximum_guests: { gte: minGuests } },
+          { maximum_guests: null }, // Include caterers with no max limit
+        ],
+      });
+    }
+    
+    // If maxGuests is provided: caterer's minimum must not exceed this
+    // This means: caterer.minimum_guests <= maxGuests (caterer's min is not more than maxGuests)
+    if (maxGuests !== undefined && maxGuests > 0) {
+      guestConditions.push({
+        OR: [
+          { minimum_guests: { lte: maxGuests } },
+          { minimum_guests: null }, // Include caterers with no min requirement
+        ],
+      });
+    }
+    
+    if (guestConditions.length > 0) {
+      andConditions.push({
+        AND: guestConditions,
+      });
+    }
+  } else if (guests && guests > 0) {
+    // Single guest count (legacy support)
     andConditions.push({
       OR: [
         {
@@ -127,6 +168,21 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
         where: {
           is_active: true,
           is_available: true,
+          // Filter by occasion if provided
+          ...(occasionId && {
+            occasions: {
+              some: {
+                occasion_id: occasionId,
+              },
+            },
+          }),
+        },
+        include: {
+          occasions: {
+            include: {
+              occassion: true,
+            },
+          },
         },
       },
       dishes: {
@@ -145,28 +201,49 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
   // Filter by budget range (based on package prices)
   let filteredCaterers = caterers;
 
-  if (minBudget !== undefined || maxBudget !== undefined) {
+  // Filter out caterers with no matching packages after occasion filter
+  if (occasionId) {
     filteredCaterers = caterers.filter((caterer) => {
+      return caterer.packages && caterer.packages.length > 0;
+    });
+  }
+
+  if ((minBudget !== undefined && minBudget > 0) || (maxBudget !== undefined && maxBudget > 0)) {
+    filteredCaterers = filteredCaterers.filter((caterer) => {
       if (!caterer.packages || caterer.packages.length === 0) {
-        return true; // Include caterers with no packages (don't filter by budget)
+        return false; // Exclude caterers with no packages when filtering by budget
       }
 
       // Calculate price per person for each package
-      const packagePrices = caterer.packages.map((pkg) => {
-        const pricePerPerson = Number(pkg.total_price) / pkg.minimum_people;
-        return pricePerPerson;
-      });
+      const packagePrices = caterer.packages
+        .filter((pkg: any) => pkg.minimum_people > 0) // Filter out packages with invalid people count
+        .map((pkg: any) => {
+          const pricePerPerson = Number(pkg.total_price) / pkg.minimum_people;
+          return pricePerPerson;
+        });
+
+      if (packagePrices.length === 0) {
+        return false; // No valid packages
+      }
 
       // Get min and max price per person
       const minPrice = Math.min(...packagePrices);
       const maxPrice = Math.max(...packagePrices);
 
-      // Check if price range matches filter
-      if (minBudget !== undefined && maxPrice < minBudget) {
-        return false;
-      }
-      if (maxBudget !== undefined && minPrice > maxBudget) {
-        return false;
+      // Check if caterer's price range overlaps with filter range
+      // Caterer is included if their price range overlaps with the filter range
+      if (minBudget !== undefined && minBudget > 0 && maxBudget !== undefined && maxBudget > 0) {
+        // Both min and max specified: caterer's range must overlap
+        // Range overlap: caterer.min <= filter.max AND caterer.max >= filter.min
+        return minPrice <= maxBudget && maxPrice >= minBudget;
+      } else if (minBudget !== undefined && minBudget > 0) {
+        // Only min specified: caterer must have packages within or above this price
+        // Show caterers whose max price is >= minBudget (they have options at or above this price)
+        return maxPrice >= minBudget;
+      } else if (maxBudget !== undefined && maxBudget > 0) {
+        // Only max specified: caterer must have packages within or below this price
+        // Show caterers whose min price is <= maxBudget (they have options at or below this price)
+        return minPrice <= maxBudget;
       }
 
       return true;
@@ -202,6 +279,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
         const hasCustomizablePackages = caterer.packages.some(
           (pkg: any) => pkg.customisation_type === 'CUSTOMISABLE' || pkg.customisation_type === 'CUSTOMIZABLE'
         );
+        const hasLiveStations = caterer.catererinfo?.full_service || false;
 
         // Check if caterer matches selected menu types
         if (menuType.fixed && !menuType.customizable && !menuType.liveStations) {
@@ -210,12 +288,49 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
         if (menuType.customizable && !menuType.fixed && !menuType.liveStations) {
           return hasCustomizablePackages;
         }
+        if (menuType.liveStations && !menuType.fixed && !menuType.customizable) {
+          return hasLiveStations;
+        }
         if (menuType.fixed && menuType.customizable && !menuType.liveStations) {
           return hasFixedPackages || hasCustomizablePackages;
         }
+        if (menuType.fixed && menuType.liveStations && !menuType.customizable) {
+          return hasFixedPackages || hasLiveStations;
+        }
+        if (menuType.customizable && menuType.liveStations && !menuType.fixed) {
+          return hasCustomizablePackages || hasLiveStations;
+        }
+        // If all are selected, return true (already handled above)
         return true;
       });
     }
+  }
+
+  // Filter by dietary needs
+  if (dietaryNeeds && dietaryNeeds.length > 0) {
+    filteredCaterers = filteredCaterers.filter((caterer) => {
+      // Check if caterer's cuisine types or description mentions any of the dietary needs
+      const catererText = (
+        (caterer.catererinfo?.business_description || '') + ' ' +
+        caterer.dishes.map((d: any) => d.cuisine_type?.name || '').join(' ')
+      ).toLowerCase();
+
+      // Check if caterer mentions any of the selected dietary needs
+      const dietaryKeywords: Record<string, string[]> = {
+        'vegetarian': ['vegetarian', 'veg'],
+        'vegan': ['vegan'],
+        'glutenFree': ['gluten-free', 'gluten free', 'glutenfree'],
+        'halal': ['halal'],
+        'kosher': ['kosher'],
+        'nutFree': ['nut-free', 'nut free', 'nutfree', 'peanut free'],
+        'dairyFree': ['dairy-free', 'dairy free', 'dairyfree', 'lactose free'],
+      };
+
+      return dietaryNeeds.some(need => {
+        const keywords = dietaryKeywords[need] || [need.toLowerCase()];
+        return keywords.some(keyword => catererText.includes(keyword));
+      });
+    });
   }
 
   // Format response with calculated price ranges
@@ -288,6 +403,10 @@ const formatCatererData = (caterer: any) => {
       rating: pkg.rating,
       cover_image_url: pkg.cover_image_url,
       is_available: pkg.is_available,
+      occasions: pkg.occasions?.map((po: any) => ({
+        id: po.occassion?.id || po.occasion_id,
+        name: po.occassion?.name,
+      })) || [],
     })),
     packages_count: packages.length,
     dishes: caterer.dishes.map((dish: any) => ({

@@ -14,11 +14,15 @@ export const filterCaterers = async (
     const {
       location,
       guests,
+      minGuests,
+      maxGuests,
       date,
       minBudget,
       maxBudget,
       menuType,
       search,
+      occasionId,
+      dietaryNeeds,
     } = req.body;
 
     // Parse menuType if it's a string
@@ -32,19 +36,25 @@ export const filterCaterers = async (
       }
     }
 
-    // Parse numeric values
-    const parsedGuests = guests ? Number(guests) : undefined;
-    const parsedMinBudget = minBudget ? Number(minBudget) : undefined;
-    const parsedMaxBudget = maxBudget ? Number(maxBudget) : undefined;
+    // Parse numeric values - handle empty strings and invalid values
+    const parsedGuests = guests && guests !== '' ? Number(guests) : undefined;
+    const parsedMinGuests = minGuests && minGuests !== '' && !isNaN(Number(minGuests)) ? Number(minGuests) : undefined;
+    const parsedMaxGuests = maxGuests && maxGuests !== '' && !isNaN(Number(maxGuests)) ? Number(maxGuests) : undefined;
+    const parsedMinBudget = minBudget && minBudget !== '' && !isNaN(Number(minBudget)) ? Number(minBudget) : undefined;
+    const parsedMaxBudget = maxBudget && maxBudget !== '' && !isNaN(Number(maxBudget)) ? Number(maxBudget) : undefined;
 
     const filters: catererService.FilterCaterersParams = {
       location,
       guests: parsedGuests,
+      minGuests: parsedMinGuests,
+      maxGuests: parsedMaxGuests,
       date,
       minBudget: parsedMinBudget,
       maxBudget: parsedMaxBudget,
       menuType: parsedMenuType,
       search,
+      occasionId,
+      dietaryNeeds: Array.isArray(dietaryNeeds) ? dietaryNeeds : dietaryNeeds ? [dietaryNeeds] : undefined,
     };
 
     const caterers = await catererService.filterCaterers(filters);

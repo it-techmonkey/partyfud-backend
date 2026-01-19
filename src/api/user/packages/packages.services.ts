@@ -36,6 +36,11 @@ export const getPackagesByCatererId = async (catererId: string) => {
               cuisine_type: true,
               category: true,
               sub_category: true,
+              free_forms: {
+                include: {
+                  freeform: true,
+                },
+              },
             },
           },
         },
@@ -88,6 +93,11 @@ export const getPackagesByCatererId = async (catererId: string) => {
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
+        free_forms: item.dish.free_forms.map((df: any) => ({
+          id: df.freeform.id,
+          name: df.freeform.name,
+          description: df.freeform.description,
+        })),
       },
       people_count: item.people_count,
       quantity: item.quantity,
@@ -172,6 +182,11 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
               cuisine_type: true,
               category: true,
               sub_category: true,
+              free_forms: {
+                include: {
+                  freeform: true,
+                },
+              },
             },
           },
         },
@@ -227,6 +242,11 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
+        free_forms: item.dish.free_forms.map((df: any) => ({
+          id: df.freeform.id,
+          name: df.freeform.name,
+          description: df.freeform.description,
+        })),
       },
       people_count: item.people_count,
       quantity: item.quantity,
@@ -297,6 +317,11 @@ export const getPackageById = async (packageId: string) => {
               cuisine_type: true,
               category: true,
               sub_category: true,
+              free_forms: {
+                include: {
+                  freeform: true,
+                },
+              },
             },
           },
         },
@@ -351,6 +376,11 @@ export const getPackageById = async (packageId: string) => {
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
+        free_forms: item.dish.free_forms.map((df: any) => ({
+          id: df.freeform.id,
+          name: df.freeform.name,
+          description: df.freeform.description,
+        })),
       },
       people_count: item.people_count,
       quantity: item.quantity,
@@ -589,6 +619,11 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
               cuisine_type: true,
               category: true,
               sub_category: true,
+              free_forms: {
+                include: {
+                  freeform: true,
+                },
+              },
             },
           },
         },
@@ -646,6 +681,11 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
+        free_forms: item.dish.free_forms.map((df: any) => ({
+          id: df.freeform.id,
+          name: df.freeform.name,
+          description: df.freeform.description,
+        })),
       },
       people_count: item.people_count,
       quantity: item.quantity,
@@ -900,6 +940,11 @@ export const createCustomPackage = async (
               cuisine_type: true,
               category: true,
               sub_category: true,
+              free_forms: {
+                include: {
+                  freeform: true,
+                },
+              },
             },
           },
         },
@@ -923,6 +968,11 @@ export const createCustomPackage = async (
               cuisine_type: true,
               category: true,
               sub_category: true,
+              free_forms: {
+                include: {
+                  freeform: true,
+                },
+              },
             },
           },
         },
@@ -976,6 +1026,11 @@ export const createCustomPackage = async (
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
+        free_forms: item.dish.free_forms.map((df: any) => ({
+          id: df.freeform.id,
+          name: df.freeform.name,
+          description: df.freeform.description,
+        })),
       },
       people_count: item.people_count,
       quantity: item.quantity,
