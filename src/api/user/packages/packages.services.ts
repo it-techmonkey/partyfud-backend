@@ -55,6 +55,14 @@ export const getPackagesByCatererId = async (catererId: string) => {
           occassion: true,
         },
       },
+      add_ons: {
+        where: {
+          is_active: true,
+        },
+        orderBy: {
+          created_at: "asc",
+        },
+      },
     },
     orderBy: {
       created_at: "desc",
@@ -88,7 +96,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
         image_url: item.dish.image_url,
         price: Number(item.dish.price),
         currency: item.dish.currency,
-        quantity_in_gm: item.dish.quantity_in_gm,
+        quantity: item.dish.quantity,
         pieces: item.dish.pieces,
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
@@ -123,6 +131,14 @@ export const getPackagesByCatererId = async (catererId: string) => {
         description: occ.occassion.description,
       },
     })),
+    add_ons: pkg.add_ons ? pkg.add_ons.map((addOn) => ({
+      id: addOn.id,
+      name: addOn.name,
+      description: addOn.description,
+      price: Number(addOn.price),
+      currency: addOn.currency,
+      is_active: addOn.is_active,
+    })) : [],
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
     };
@@ -237,7 +253,7 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
         image_url: item.dish.image_url,
         price: Number(item.dish.price),
         currency: item.dish.currency,
-        quantity_in_gm: item.dish.quantity_in_gm,
+        quantity: item.dish.quantity,
         pieces: item.dish.pieces,
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
@@ -336,6 +352,14 @@ export const getPackageById = async (packageId: string) => {
           occassion: true,
         },
       },
+      add_ons: {
+        where: {
+          is_active: true,
+        },
+        orderBy: {
+          created_at: "asc",
+        },
+      },
     },
   });
 
@@ -371,7 +395,7 @@ export const getPackageById = async (packageId: string) => {
         image_url: item.dish.image_url,
         price: Number(item.dish.price),
         currency: item.dish.currency,
-        quantity_in_gm: item.dish.quantity_in_gm,
+        quantity: item.dish.quantity,
         pieces: item.dish.pieces,
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
@@ -406,6 +430,17 @@ export const getPackageById = async (packageId: string) => {
         description: occ.occassion.description,
       },
     })),
+    add_ons: pkg.add_ons ? pkg.add_ons.map((addOn) => ({
+      id: addOn.id,
+      package_id: addOn.package_id,
+      name: addOn.name,
+      description: addOn.description,
+      price: Number(addOn.price),
+      currency: addOn.currency,
+      is_active: addOn.is_active,
+      created_at: addOn.created_at,
+      updated_at: addOn.updated_at,
+    })) : [],
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
   };
@@ -676,7 +711,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
         image_url: item.dish.image_url,
         price: Number(item.dish.price),
         currency: item.dish.currency,
-        quantity_in_gm: item.dish.quantity_in_gm,
+        quantity: item.dish.quantity,
         pieces: item.dish.pieces,
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,
@@ -1021,7 +1056,7 @@ export const createCustomPackage = async (
         image_url: item.dish.image_url,
         price: Number(item.dish.price),
         currency: item.dish.currency,
-        quantity_in_gm: item.dish.quantity_in_gm,
+        quantity: item.dish.quantity,
         pieces: item.dish.pieces,
         cuisine_type: item.dish.cuisine_type.name,
         category: item.dish.category?.name || null,

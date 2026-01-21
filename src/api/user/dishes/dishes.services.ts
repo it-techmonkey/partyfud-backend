@@ -125,7 +125,7 @@ export const getAllDishesWithFilters = async (filters: DishFilters = {}) => {
               : dish.caterer.catererinfo?.region) || null,
         }
       : null,
-    quantity_in_gm: dish.quantity_in_gm,
+    quantity: dish.quantity,
     pieces: dish.pieces,
     price: Number(dish.price),
     currency: dish.currency,
@@ -277,7 +277,7 @@ export const getAllDishesGroupedByCategory = async (filters: DishFilters = {}) =
               : dish.caterer.catererinfo?.region) || null,
           }
         : null,
-      quantity_in_gm: dish.quantity_in_gm,
+      quantity: dish.quantity,
       pieces: dish.pieces,
       price: Number(dish.price),
       currency: dish.currency,
@@ -375,7 +375,7 @@ export const getDishById = async (dishId: string) => {
               : dish.caterer.catererinfo?.region) || null,
         }
       : null,
-    quantity_in_gm: dish.quantity_in_gm,
+    quantity: dish.quantity,
     pieces: dish.pieces,
     price: Number(dish.price),
     currency: dish.currency,

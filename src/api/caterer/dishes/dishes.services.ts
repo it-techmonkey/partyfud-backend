@@ -6,7 +6,7 @@ export interface CreateDishData {
   cuisine_type: string; // Changed from cuisine_type_id to cuisine_type (name)
   category?: string; // Changed from category_id to category (name) - now optional
   sub_category?: string; // Changed from sub_category_id to sub_category (name) - now optional
-  quantity_in_gm?: number;
+  quantity?: string;
   pieces?: number;
   price: number;
   currency?: string;
@@ -20,7 +20,7 @@ export interface UpdateDishData {
   cuisine_type?: string; // Changed from cuisine_type_id to cuisine_type (name)
   category?: string; // Changed from category_id to category (name)
   sub_category?: string; // Changed from sub_category_id to sub_category (name)
-  quantity_in_gm?: number;
+  quantity?: string;
   pieces?: number;
   price?: number;
   currency?: string;
@@ -240,7 +240,7 @@ export const createDish = async (catererId: string, data: CreateDishData) => {
       category_id: category?.id || null, // Allow null if category is not provided
       sub_category_id: subCategory?.id || null, // Allow null if category has no subcategories
       caterer_id: catererId,
-      quantity_in_gm: data.quantity_in_gm,
+      quantity: data.quantity,
       pieces: data.pieces ?? 1,
       price: data.price,
       currency: data.currency || "AED",
@@ -290,7 +290,7 @@ export const updateDish = async (
   const updateData: any = {
     name: data.name,
     image_url: data.image_url,
-    quantity_in_gm: data.quantity_in_gm,
+    quantity: data.quantity,
     pieces: data.pieces,
     price: data.price,
     currency: data.currency,

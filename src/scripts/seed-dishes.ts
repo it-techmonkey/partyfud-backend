@@ -183,7 +183,7 @@ async function main() {
           category_id: categoryId,
           sub_category_id: subCategoryId,
           caterer_id: CATERER_ID,
-          quantity_in_gm: dishData.quantity_gm || null,
+          quantity: dishData.quantity_gm ? String(dishData.quantity_gm) : null,
           pieces: dishData.pieces || 1,
           price: dishData.price,
           currency: "AED",

@@ -415,7 +415,7 @@ const formatCatererData = (caterer: any) => {
       image_url: dish.image_url,
       price: Number(dish.price),
       currency: dish.currency,
-      quantity_in_gm: dish.quantity_in_gm,
+      quantity: dish.quantity,
       pieces: dish.pieces,
       cuisine_type: dish.cuisine_type?.name || null,
       category: dish.category?.name || null,
@@ -565,7 +565,7 @@ export const getDishesByCatererId = async (catererId: string) => {
               : dish.caterer.catererinfo?.region) || null,
         }
       : null,
-    quantity_in_gm: dish.quantity_in_gm,
+    quantity: dish.quantity,
     pieces: dish.pieces,
     price: Number(dish.price),
     currency: dish.currency,

@@ -22,7 +22,7 @@ export const createCartItem = async (
       return;
     }
 
-    const { package_id, location, guests, date, event_time, event_type, area, price_at_time } =
+    const { package_id, location, guests, date, event_time, event_type, area, price_at_time, add_ons } =
       req.body;
 
     if (!package_id) {
@@ -44,6 +44,7 @@ export const createCartItem = async (
       event_type,
       area,
       price_at_time,
+      add_ons,
     });
 
     res.status(201).json({
@@ -99,7 +100,7 @@ export const updateCartItem = async (
       return;
     }
 
-    const { location, guests, date, event_time, event_type, area, price_at_time } = req.body;
+    const { location, guests, date, event_time, event_type, area, price_at_time, add_ons } = req.body;
 
     const updatedCartItem = await cartService.updateCartItem(user.userId, cartItemId, {
       location,
@@ -109,6 +110,7 @@ export const updateCartItem = async (
       event_type,
       area,
       price_at_time,
+      add_ons,
     });
 
     res.status(200).json({

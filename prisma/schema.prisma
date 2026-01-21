@@ -136,7 +136,7 @@ model Dish {
   category_id     String?
   sub_category_id String?
   caterer_id      String?
-  quantity_in_gm  Int?
+  quantity       String?
   pieces          Int            @default(1)
   price           Int
   currency        String         @default("AED")
@@ -206,6 +206,7 @@ model Package {
   occasions           PackageOccassion[]
   cart_items          CartItem[]
   order_items         OrderItem[]
+  add_ons             AddOn[]
 
   @@index([caterer_id])
   @@index([user_id])
@@ -277,6 +278,7 @@ model CartItem {
   price_at_time   Decimal?     @db.Decimal(10, 2)
   cart            Cart         @relation(fields: [cart_id], references: [id], onDelete: Cascade)
   package         Package      @relation(fields: [package_id], references: [id])
+  add_ons         CartItemAddOn[]
   created_at      DateTime    @default(now())
   updated_at      DateTime    @updatedAt
 
@@ -310,6 +312,7 @@ model OrderItem {
   price_at_time   Decimal      @db.Decimal(10, 2)
   order           Order        @relation(fields: [order_id], references: [id], onDelete: Cascade)
   package         Package      @relation(fields: [package_id], references: [id], onDelete: Restrict)
+  add_ons         OrderItemAddOn[]
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
 
@@ -390,4 +393,52 @@ model CatererCertification {
 enum CustomisationType {
   FIXED
   CUSTOMISABLE
+}
+
+model AddOn {
+  id          String            @id @default(uuid())
+  package_id  String
+  name        String
+  description String?           @db.Text
+  price       Int
+  currency    String             @default("AED")
+  is_active   Boolean            @default(true)
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+  package     Package            @relation(fields: [package_id], references: [id], onDelete: Cascade)
+  cart_items  CartItemAddOn[]
+  order_items OrderItemAddOn[]
+
+  @@index([package_id])
+  @@index([is_active])
+}
+
+model CartItemAddOn {
+  id          String   @id @default(uuid())
+  cart_item_id String
+  add_on_id   String
+  quantity    Int      @default(1)
+  price_at_time Int?   // Price at the time of adding to cart
+  created_at  DateTime @default(now())
+  cart_item   CartItem @relation(fields: [cart_item_id], references: [id], onDelete: Cascade)
+  add_on      AddOn    @relation(fields: [add_on_id], references: [id], onDelete: Restrict)
+
+  @@unique([cart_item_id, add_on_id])
+  @@index([cart_item_id])
+  @@index([add_on_id])
+}
+
+model OrderItemAddOn {
+  id          String    @id @default(uuid())
+  order_item_id String
+  add_on_id   String
+  quantity    Int       @default(1)
+  price_at_time Int     // Price at the time of order
+  created_at  DateTime  @default(now())
+  order_item  OrderItem @relation(fields: [order_item_id], references: [id], onDelete: Cascade)
+  add_on      AddOn     @relation(fields: [add_on_id], references: [id], onDelete: Restrict)
+
+  @@unique([order_item_id, add_on_id])
+  @@index([order_item_id])
+  @@index([add_on_id])
 }

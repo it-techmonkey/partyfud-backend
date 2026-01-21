@@ -65,6 +65,11 @@ export const getOrdersForCaterer = async (catererId: string) => {
               },
             },
           },
+          add_ons: {
+            include: {
+              add_on: true,
+            },
+          },
         },
       },
     },
@@ -125,6 +130,19 @@ export const getOrdersForCaterer = async (catererId: string) => {
       guests: item.guests,
       date: item.date,
       price_at_time: Number(item.price_at_time),
+      add_ons: item.add_ons ? item.add_ons.map(oia => ({
+        id: oia.id,
+        add_on_id: oia.add_on_id,
+        quantity: oia.quantity,
+        price_at_time: Number(oia.price_at_time),
+        add_on: {
+          id: oia.add_on.id,
+          name: oia.add_on.name,
+          description: oia.add_on.description,
+          price: Number(oia.add_on.price),
+          currency: oia.add_on.currency,
+        },
+      })) : [],
       created_at: item.created_at,
     })),
     created_at: order.created_at,
@@ -190,6 +208,11 @@ export const getOrderByIdForCaterer = async (catererId: string, orderId: string)
               },
             },
           },
+          add_ons: {
+            include: {
+              add_on: true,
+            },
+          },
         },
       },
     },
@@ -251,6 +274,19 @@ export const getOrderByIdForCaterer = async (catererId: string, orderId: string)
       guests: item.guests,
       date: item.date,
       price_at_time: Number(item.price_at_time),
+      add_ons: item.add_ons ? item.add_ons.map(oia => ({
+        id: oia.id,
+        add_on_id: oia.add_on_id,
+        quantity: oia.quantity,
+        price_at_time: Number(oia.price_at_time),
+        add_on: {
+          id: oia.add_on.id,
+          name: oia.add_on.name,
+          description: oia.add_on.description,
+          price: Number(oia.add_on.price),
+          currency: oia.add_on.currency,
+        },
+      })) : [],
       created_at: item.created_at,
     })),
     created_at: order.created_at,

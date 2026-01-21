@@ -120,18 +120,15 @@ export const createDish = async (
       cuisine_type_id,
       category_id,
       sub_category_id,
-      quantity_in_gm,
+      quantity,
       pieces,
       price,
       currency,
       is_active,
     } = req.body;
 
-    // Convert FormData string values to proper types
-    // FormData sends all values as strings, so we need to parse them
-    const parsedQuantityInGm = quantity_in_gm 
-      ? (typeof quantity_in_gm === 'string' ? parseInt(quantity_in_gm, 10) : quantity_in_gm)
-      : undefined;
+    // Quantity is now a free text field (string)
+    const parsedQuantity = quantity || undefined;
 
     const parsedPieces = pieces 
       ? (typeof pieces === 'string' ? parseInt(pieces, 10) : pieces)
@@ -242,7 +239,7 @@ export const createDish = async (
       name,
       image_url,
       cuisine_type: cuisineType.name,
-      quantity_in_gm: parsedQuantityInGm,
+      quantity: parsedQuantity,
       pieces: parsedPieces,
       price: parsedPrice,
       currency: currency || 'AED',
@@ -312,18 +309,15 @@ export const updateDish = async (
       cuisine_type_id,
       category_id,
       sub_category_id,
-      quantity_in_gm,
+      quantity,
       pieces,
       price,
       currency,
       is_active,
     } = req.body;
 
-    // Convert FormData string values to proper types (if provided)
-    // FormData sends all values as strings, so we need to parse them
-    const parsedQuantityInGm = quantity_in_gm !== undefined
-      ? (typeof quantity_in_gm === 'string' ? parseInt(quantity_in_gm, 10) : quantity_in_gm)
-      : undefined;
+    // Quantity is now a free text field (string)
+    const parsedQuantity = quantity !== undefined ? quantity : undefined;
 
     const parsedPieces = pieces !== undefined
       ? (typeof pieces === 'string' ? parseInt(pieces, 10) : pieces)
@@ -344,7 +338,7 @@ export const updateDish = async (
     
     if (name !== undefined) updateData.name = name;
     if (image_url !== undefined) updateData.image_url = image_url;
-    if (parsedQuantityInGm !== undefined) updateData.quantity_in_gm = parsedQuantityInGm;
+    if (parsedQuantity !== undefined) updateData.quantity = parsedQuantity;
     if (parsedPieces !== undefined) updateData.pieces = parsedPieces;
     if (parsedPrice !== undefined) updateData.price = parsedPrice;
     if (currency !== undefined) updateData.currency = currency;

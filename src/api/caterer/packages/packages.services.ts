@@ -103,6 +103,14 @@ export const getPackagesByCatererId = async (catererId: string) => {
             occassion: true,
           },
         },
+        add_ons: {
+          where: {
+            is_active: true,
+          },
+          orderBy: {
+            created_at: "asc",
+          },
+        },
       },
       orderBy: {
         created_at: "desc",
@@ -153,7 +161,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
             category_id: item.dish.category_id,
             sub_category_id: item.dish.sub_category_id,
             caterer_id: item.dish.caterer_id,
-            quantity_in_gm: item.dish.quantity_in_gm,
+            quantity: item.dish.quantity,
             pieces: item.dish.pieces,
             price: typeof item.dish.price === 'number' ? item.dish.price : parseInt(String(item.dish.price), 10),
             currency: item.dish.currency,
@@ -180,6 +188,17 @@ export const getPackagesByCatererId = async (catererId: string) => {
           created_at: occ.created_at,
           occassion: occ.occassion,
         })),
+        add_ons: pkg.add_ons ? pkg.add_ons.map((addOn) => ({
+          id: addOn.id,
+          package_id: addOn.package_id,
+          name: addOn.name,
+          description: addOn.description,
+          price: typeof addOn.price === 'number' ? addOn.price : parseInt(String(addOn.price), 10),
+          currency: addOn.currency,
+          is_active: addOn.is_active,
+          created_at: addOn.created_at,
+          updated_at: addOn.updated_at,
+        })) : [],
       };
       return formatted;
     });
@@ -833,6 +852,14 @@ export const updatePackage = async (
         occasions: {
           include: {
             occassion: true,
+          },
+        },
+        add_ons: {
+          where: {
+            is_active: true,
+          },
+          orderBy: {
+            created_at: "asc",
           },
         },
       },

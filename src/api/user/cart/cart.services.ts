@@ -45,6 +45,10 @@ export interface CreateCartItemInput {
   event_type?: string;
   area?: string;
   price_at_time?: number;
+  add_ons?: Array<{
+    add_on_id: string;
+    quantity?: number;
+  }>;
 }
 
 export const createCartItem = async (
@@ -81,10 +85,41 @@ export const createCartItem = async (
     throw new Error("Package already exists in cart. Use update endpoint to modify it.");
   }
 
-  // Use package price if price_at_time not provided
-  const price = input.price_at_time
+  // Calculate base price
+  let basePrice = input.price_at_time
     ? input.price_at_time
     : Number(packageData.total_price);
+
+  // Calculate add-ons price if provided
+  let addOnsTotalPrice = 0;
+  let addOns: any[] = [];
+  if (input.add_ons && input.add_ons.length > 0) {
+    // Verify all add-ons exist and belong to this package
+    const addOnIds = input.add_ons.map(a => a.add_on_id);
+    addOns = await prisma.addOn.findMany({
+      where: {
+        id: { in: addOnIds },
+        package_id: input.package_id,
+        is_active: true,
+      },
+    });
+
+    if (addOns.length !== addOnIds.length) {
+      throw new Error("One or more add-ons not found or not available");
+    }
+
+    // Calculate total add-ons price
+    for (const addOnInput of input.add_ons) {
+      const addOn = addOns.find(a => a.id === addOnInput.add_on_id);
+      if (addOn) {
+        const quantity = addOnInput.quantity || 1;
+        addOnsTotalPrice += Number(addOn.price) * quantity;
+      }
+    }
+  }
+
+  // Total price includes base price + add-ons
+  const totalPrice = basePrice + addOnsTotalPrice;
 
   // Create cart item
   const cartItem = await prisma.cartItem.create({
@@ -97,7 +132,17 @@ export const createCartItem = async (
       event_time: input.event_time,
       event_type: input.event_type,
       area: input.area,
-      price_at_time: price,
+      price_at_time: totalPrice,
+      add_ons: input.add_ons && input.add_ons.length > 0 ? {
+        create: input.add_ons.map(addOnInput => {
+          const addOn = addOns.find(a => a.id === addOnInput.add_on_id);
+          return {
+            add_on_id: addOnInput.add_on_id,
+            quantity: addOnInput.quantity || 1,
+            price_at_time: addOn ? Number(addOn.price) : 0,
+          };
+        }),
+      } : undefined,
     },
     include: {
       package: {
@@ -107,6 +152,11 @@ export const createCartItem = async (
               catererinfo: true,
             },
           },
+        },
+      },
+      add_ons: {
+        include: {
+          add_on: true,
         },
       },
     },
@@ -133,6 +183,19 @@ export const createCartItem = async (
     event_type: cartItem.event_type,
     area: cartItem.area,
     price_at_time: cartItem.price_at_time ? Number(cartItem.price_at_time) : null,
+    add_ons: cartItem.add_ons ? cartItem.add_ons.map(cia => ({
+      id: cia.id,
+      add_on_id: cia.add_on_id,
+      quantity: cia.quantity,
+      price_at_time: cia.price_at_time ? Number(cia.price_at_time) : null,
+      add_on: {
+        id: cia.add_on.id,
+        name: cia.add_on.name,
+        description: cia.add_on.description,
+        price: Number(cia.add_on.price),
+        currency: cia.add_on.currency,
+      },
+    })) : [],
     created_at: cartItem.created_at,
     updated_at: cartItem.updated_at,
   };
@@ -149,6 +212,10 @@ export interface UpdateCartItemInput {
   event_type?: string;
   area?: string;
   price_at_time?: number;
+  add_ons?: Array<{
+    add_on_id: string;
+    quantity?: number;
+  }>;
 }
 
 export const updateCartItem = async (
@@ -170,11 +237,82 @@ export const updateCartItem = async (
       id: cartItemId,
       cart_id: cart.id,
     },
+    include: {
+      add_ons: {
+        include: {
+          add_on: true,
+        },
+      },
+    },
   });
 
   if (!cartItem) {
     throw new Error("Cart item not found");
   }
+
+  // Handle add-ons update if provided
+  let addOnsTotalPrice = 0;
+  if (input.add_ons !== undefined) {
+    // Delete existing add-ons
+    await prisma.cartItemAddOn.deleteMany({
+      where: { cart_item_id: cartItemId },
+    });
+
+    // Add new add-ons if provided
+    if (input.add_ons.length > 0) {
+      // Verify all add-ons exist and belong to this package
+      const addOnIds = input.add_ons.map(a => a.add_on_id);
+      const addOns = await prisma.addOn.findMany({
+        where: {
+          id: { in: addOnIds },
+          package_id: cartItem.package_id,
+          is_active: true,
+        },
+      });
+
+      if (addOns.length !== addOnIds.length) {
+        throw new Error("One or more add-ons not found or not available");
+      }
+
+      // Calculate total add-ons price
+      for (const addOnInput of input.add_ons) {
+        const addOn = addOns.find(a => a.id === addOnInput.add_on_id);
+        if (addOn) {
+          const quantity = addOnInput.quantity || 1;
+          addOnsTotalPrice += Number(addOn.price) * quantity;
+        }
+      }
+
+      // Create new add-on associations
+      await prisma.cartItemAddOn.createMany({
+        data: input.add_ons.map(addOnInput => {
+          const addOn = addOns.find(a => a.id === addOnInput.add_on_id);
+          return {
+            cart_item_id: cartItemId,
+            add_on_id: addOnInput.add_on_id,
+            quantity: addOnInput.quantity || 1,
+            price_at_time: addOn ? Number(addOn.price) : 0,
+          };
+        }),
+      });
+    }
+  } else {
+    // Preserve existing add-ons and calculate their total price
+    if (cartItem.add_ons && cartItem.add_ons.length > 0) {
+      for (const cartAddOn of cartItem.add_ons) {
+        addOnsTotalPrice += Number(cartAddOn.add_on.price) * cartAddOn.quantity;
+      }
+    }
+  }
+
+  // Recalculate total price
+  const packageData = await prisma.package.findUnique({
+    where: { id: cartItem.package_id },
+  });
+  const basePrice = input.price_at_time !== undefined
+    ? input.price_at_time
+    : (packageData ? Number(packageData.total_price) : Number(cartItem.price_at_time || 0));
+  const newTotalPrice = basePrice + addOnsTotalPrice;
 
   // Update cart item
   const updatedCartItem = await prisma.cartItem.update({
@@ -186,10 +324,7 @@ export const updateCartItem = async (
       event_time: input.event_time !== undefined ? input.event_time : cartItem.event_time,
       event_type: input.event_type !== undefined ? input.event_type : cartItem.event_type,
       area: input.area !== undefined ? input.area : cartItem.area,
-      price_at_time:
-        input.price_at_time !== undefined
-          ? input.price_at_time
-          : cartItem.price_at_time,
+      price_at_time: newTotalPrice,
     },
     include: {
       package: {
@@ -199,6 +334,11 @@ export const updateCartItem = async (
               catererinfo: true,
             },
           },
+        },
+      },
+      add_ons: {
+        include: {
+          add_on: true,
         },
       },
     },
@@ -227,6 +367,19 @@ export const updateCartItem = async (
     price_at_time: updatedCartItem.price_at_time
       ? Number(updatedCartItem.price_at_time)
       : null,
+    add_ons: updatedCartItem.add_ons ? updatedCartItem.add_ons.map(cia => ({
+      id: cia.id,
+      add_on_id: cia.add_on_id,
+      quantity: cia.quantity,
+      price_at_time: cia.price_at_time ? Number(cia.price_at_time) : null,
+      add_on: {
+        id: cia.add_on.id,
+        name: cia.add_on.name,
+        description: cia.add_on.description,
+        price: Number(cia.add_on.price),
+        currency: cia.add_on.currency,
+      },
+    })) : [],
     created_at: updatedCartItem.created_at,
     updated_at: updatedCartItem.updated_at,
   };
@@ -281,6 +434,11 @@ export const getCartItems = async (userId: string) => {
               },
             },
           },
+          add_ons: {
+            include: {
+              add_on: true,
+            },
+          },
         },
         orderBy: {
           created_at: "desc",
@@ -314,6 +472,19 @@ export const getCartItems = async (userId: string) => {
     event_type: item.event_type,
     area: item.area,
     price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
+    add_ons: item.add_ons ? item.add_ons.map(cia => ({
+      id: cia.id,
+      add_on_id: cia.add_on_id,
+      quantity: cia.quantity,
+      price_at_time: cia.price_at_time ? Number(cia.price_at_time) : null,
+      add_on: {
+        id: cia.add_on.id,
+        name: cia.add_on.name,
+        description: cia.add_on.description,
+        price: Number(cia.add_on.price),
+        currency: cia.add_on.currency,
+      },
+    })) : [],
     created_at: item.created_at,
     updated_at: item.updated_at,
   }));

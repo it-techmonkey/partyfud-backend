@@ -11,6 +11,11 @@ export interface CreateOrderInput {
     guests?: number;
     date?: Date;
     price_at_time: number;
+    add_ons?: Array<{
+      add_on_id: string;
+      quantity?: number;
+      price_at_time: number;
+    }>;
   }>;
 }
 
@@ -28,6 +33,11 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
           },
           include: {
             package: true,
+            add_ons: {
+              include: {
+                add_on: true,
+              },
+            },
           },
         },
       },
@@ -46,6 +56,11 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       price_at_time: item.price_at_time
         ? Number(item.price_at_time)
         : Number(item.package.total_price),
+      add_ons: item.add_ons ? item.add_ons.map(cia => ({
+        add_on_id: cia.add_on_id,
+        quantity: cia.quantity,
+        price_at_time: cia.price_at_time ? Number(cia.price_at_time) : Number(cia.add_on.price),
+      })) : [],
     }));
   }
 
@@ -85,6 +100,13 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
             guests: item.guests,
             date: item.date,
             price_at_time: item.price_at_time,
+            add_ons: item.add_ons && item.add_ons.length > 0 ? {
+              create: item.add_ons.map(addOn => ({
+                add_on_id: addOn.add_on_id,
+                quantity: addOn.quantity || 1,
+                price_at_time: addOn.price_at_time,
+              })),
+            } : undefined,
           })),
         },
       },
@@ -98,6 +120,11 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
                     catererinfo: true,
                   },
                 },
+              },
+            },
+            add_ons: {
+              include: {
+                add_on: true,
               },
             },
           },
@@ -144,6 +171,19 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       guests: item.guests,
       date: item.date,
       price_at_time: Number(item.price_at_time),
+      add_ons: item.add_ons ? item.add_ons.map(oia => ({
+        id: oia.id,
+        add_on_id: oia.add_on_id,
+        quantity: oia.quantity,
+        price_at_time: Number(oia.price_at_time),
+        add_on: {
+          id: oia.add_on.id,
+          name: oia.add_on.name,
+          description: oia.add_on.description,
+          price: Number(oia.add_on.price),
+          currency: oia.add_on.currency,
+        },
+      })) : [],
       created_at: item.created_at,
     })),
     created_at: order.created_at,
@@ -207,6 +247,11 @@ export const updateOrder = async (
               },
             },
           },
+          add_ons: {
+            include: {
+              add_on: true,
+            },
+          },
         },
       },
     },
@@ -236,6 +281,19 @@ export const updateOrder = async (
       guests: item.guests,
       date: item.date,
       price_at_time: Number(item.price_at_time),
+      add_ons: item.add_ons ? item.add_ons.map(oia => ({
+        id: oia.id,
+        add_on_id: oia.add_on_id,
+        quantity: oia.quantity,
+        price_at_time: Number(oia.price_at_time),
+        add_on: {
+          id: oia.add_on.id,
+          name: oia.add_on.name,
+          description: oia.add_on.description,
+          price: Number(oia.add_on.price),
+          currency: oia.add_on.currency,
+        },
+      })) : [],
       created_at: item.created_at,
     })),
     created_at: updatedOrder.created_at,
@@ -292,6 +350,11 @@ export const getOrders = async (userId: string) => {
               },
             },
           },
+          add_ons: {
+            include: {
+              add_on: true,
+            },
+          },
         },
       },
     },
@@ -324,6 +387,19 @@ export const getOrders = async (userId: string) => {
       guests: item.guests,
       date: item.date,
       price_at_time: Number(item.price_at_time),
+      add_ons: item.add_ons ? item.add_ons.map(oia => ({
+        id: oia.id,
+        add_on_id: oia.add_on_id,
+        quantity: oia.quantity,
+        price_at_time: Number(oia.price_at_time),
+        add_on: {
+          id: oia.add_on.id,
+          name: oia.add_on.name,
+          description: oia.add_on.description,
+          price: Number(oia.add_on.price),
+          currency: oia.add_on.currency,
+        },
+      })) : [],
       created_at: item.created_at,
     })),
     created_at: order.created_at,
@@ -350,6 +426,11 @@ export const getOrderById = async (userId: string, orderId: string) => {
                   catererinfo: true,
                 },
               },
+            },
+          },
+          add_ons: {
+            include: {
+              add_on: true,
             },
           },
         },
@@ -385,6 +466,19 @@ export const getOrderById = async (userId: string, orderId: string) => {
       guests: item.guests,
       date: item.date,
       price_at_time: Number(item.price_at_time),
+      add_ons: item.add_ons ? item.add_ons.map(oia => ({
+        id: oia.id,
+        add_on_id: oia.add_on_id,
+        quantity: oia.quantity,
+        price_at_time: Number(oia.price_at_time),
+        add_on: {
+          id: oia.add_on.id,
+          name: oia.add_on.name,
+          description: oia.add_on.description,
+          price: Number(oia.add_on.price),
+          currency: oia.add_on.currency,
+        },
+      })) : [],
       created_at: item.created_at,
     })),
     created_at: order.created_at,

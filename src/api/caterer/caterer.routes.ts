@@ -2,6 +2,7 @@ import { Router } from "express";
 import dishesRoutes from "./dishes/dishes.routes";
 import packagesRoutes from "./packages/packages.routes";
 import packageItemsRoutes from "./package-items/package-items.routes";
+import addOnsRoutes from "./add-ons/add-ons.routes";
 import metadataRoutes from "./metadata.routes";
 import dashboardRoutes from "./dashboard/dashboard.routes";
 import proposalRoutes from "./proposal/proposal.routes";
@@ -20,7 +21,10 @@ router.use("/dishes", dishesRoutes);
 // Mount package items routes at /packages/items FIRST (before /packages to avoid route conflicts)
 router.use("/packages/items", packageItemsRoutes);
 
-// Mount package routes at /packages (must come after /packages/items)
+// Mount add-ons routes BEFORE /packages to avoid route conflicts with /:id
+router.use("/", addOnsRoutes);
+
+// Mount package routes at /packages (must come after add-ons routes)
 router.use("/packages", packagesRoutes);
 
 // Mount metadata routes at /metadata
