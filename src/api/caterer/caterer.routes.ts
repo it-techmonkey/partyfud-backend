@@ -12,6 +12,10 @@ import onboardingRoutes from "./onboarding/onboarding.routes";
 
 const router = Router();
 
+// Mount onboarding routes FIRST - these should NOT require CATERER role
+// Users are completing onboarding to BECOME a caterer
+router.use("/onboarding", onboardingRoutes);
+
 // Mount dashboard routes at /dashboard
 router.use("/dashboard", dashboardRoutes);
 
@@ -38,8 +42,5 @@ router.use("/orders", ordersRoutes);
 
 // Mount info routes at /info
 router.use("/info", infoRoutes);
-
-// Mount onboarding routes at /onboarding
-router.use("/onboarding", onboardingRoutes);
 
 export default router;
