@@ -887,6 +887,65 @@ export const deletePackage = async (packageId: string, catererId: string) => {
     throw new Error('Package not found or you do not have permission to delete it');
   }
 
+  // Find all order items that reference this package
+  const orderItems = await prisma.orderItem.findMany({
+    where: {
+      package_id: packageId,
+    },
+    select: {
+      id: true,
+      order_id: true,
+    },
+  });
+
+  // Get unique order IDs
+  const orderIds = [...new Set(orderItems.map(item => item.order_id))];
+
+  // Delete all order items that reference this package
+  if (orderItems.length > 0) {
+    await prisma.orderItem.deleteMany({
+      where: {
+        package_id: packageId,
+      },
+    });
+
+    // Check each order to see if it's now empty (no items left)
+    // If empty, delete the order as well
+    const orderChecks = await Promise.all(
+      orderIds.map(async (orderId) => {
+        const remainingItems = await prisma.orderItem.count({
+          where: {
+            order_id: orderId,
+          },
+        });
+        return { orderId, isEmpty: remainingItems === 0 };
+      })
+    );
+
+    // Delete all empty orders
+    const emptyOrderIds = orderChecks
+      .filter(check => check.isEmpty)
+      .map(check => check.orderId);
+
+    if (emptyOrderIds.length > 0) {
+      await prisma.order.deleteMany({
+        where: {
+          id: {
+            in: emptyOrderIds,
+          },
+        },
+      });
+    }
+  }
+
+  // Delete all cart items that reference this package
+  // This is necessary because CartItem has a RESTRICT foreign key constraint
+  await prisma.cartItem.deleteMany({
+    where: {
+      package_id: packageId,
+    },
+  });
+
   // Delete the package (related records will be cascade deleted based on schema)
   await prisma.package.delete({
     where: {
