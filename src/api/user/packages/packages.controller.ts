@@ -36,8 +36,8 @@ export const getPackagesByCatererId = async (
     });
   } catch (error: any) {
     console.error("Error fetching packages:", error);
-    const statusCode = error.message?.includes("not found") || 
-                       error.message?.includes("not approved") ? 404 : 500;
+    const statusCode = error.message?.includes("not found") ||
+      error.message?.includes("not approved") ? 404 : 500;
     res.status(statusCode).json({
       success: false,
       error: {
@@ -77,8 +77,8 @@ export const getPackageById = async (
     });
   } catch (error: any) {
     console.error("Error fetching package:", error);
-    const statusCode = error.message?.includes("not found") || 
-                       error.message?.includes("not available") ? 404 : 500;
+    const statusCode = error.message?.includes("not found") ||
+      error.message?.includes("not available") ? 404 : 500;
     res.status(statusCode).json({
       success: false,
       error: {
@@ -92,114 +92,94 @@ export const getPackageById = async (
  * Get all packages with filters
  * GET /api/user/packages/all?caterer_id=xxx&location=xxx&min_price=xxx&max_price=xxx&...
  */
+
 export const getAllPackages = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Extract query parameters
-    const filters: any = {};
+    const {
+      caterer_id,
+      location,
+      region,
+      min_guests,
+      max_guests,
+      min_price,
+      max_price,
+      occasion_id,
+      occasion_name,
+      cuisine_type_id,
+      category_id,
+      search,
+      menu_type,
+      sort_by,
+      created_by,
+      user_id
+    } = req.query;
 
-    if (req.query.caterer_id && typeof req.query.caterer_id === 'string') {
-      filters.caterer_id = req.query.caterer_id;
+    const filters: packagesService.PackageFilters = {};
+
+    if (typeof caterer_id === 'string') filters.caterer_id = caterer_id;
+    if (typeof location === 'string') filters.location = location;
+    if (typeof region === 'string') filters.region = region;
+
+    if (min_guests) filters.min_guests = parseInt(min_guests as string, 10);
+    if (max_guests) filters.max_guests = parseInt(max_guests as string, 10);
+
+    if (min_price) filters.min_price = parseInt(min_price as string, 10);
+    if (max_price) filters.max_price = parseInt(max_price as string, 10);
+
+    if (typeof occasion_id === 'string') filters.occasion_id = occasion_id;
+    if (typeof cuisine_type_id === 'string') filters.cuisine_type_id = cuisine_type_id;
+    if (typeof category_id === 'string') filters.category_id = category_id;
+    if (typeof search === 'string') filters.search = search;
+    if (typeof user_id === 'string') filters.user_id = user_id;
+
+    // Handle menu_type
+    if (typeof menu_type === 'string' && (menu_type === 'fixed' || menu_type === 'customizable')) {
+      filters.menu_type = menu_type;
     }
 
-    if (req.query.location && typeof req.query.location === 'string') {
-      filters.location = req.query.location;
+    // Handle sort_by
+    const validSortOptions = ['price_asc', 'price_desc', 'rating_desc', 'created_desc'];
+    if (typeof sort_by === 'string' && validSortOptions.includes(sort_by)) {
+      filters.sort_by = sort_by as any;
     }
 
-    if (req.query.region && typeof req.query.region === 'string') {
-      filters.region = req.query.region;
+    // Handle created_by
+    if (typeof created_by === 'string' && (created_by === 'USER' || created_by === 'CATERER')) {
+      filters.created_by = created_by;
     }
 
-    if (req.query.min_guests) {
-      filters.min_guests = parseInt(req.query.min_guests as string, 10);
-    }
-
-    if (req.query.max_guests) {
-      filters.max_guests = parseInt(req.query.max_guests as string, 10);
-    }
-
-    if (req.query.min_price) {
-      filters.min_price = parseInt(req.query.min_price as string, 10);
-    }
-
-    if (req.query.max_price) {
-      filters.max_price = parseInt(req.query.max_price as string, 10);
-    }
-
-    if (req.query.occasion_id && typeof req.query.occasion_id === 'string') {
-      filters.occasion_id = req.query.occasion_id;
-    }
-
-    // Support filtering by occasion_name (convert to occasion_id)
-    if (req.query.occasion_name && typeof req.query.occasion_name === 'string' && !filters.occasion_id) {
+    // Handle occasion_name -> occasion_id
+    if (typeof occasion_name === 'string' && !filters.occasion_id) {
       try {
         const occasion = await prisma.occassion.findFirst({
           where: {
             name: {
-              equals: req.query.occasion_name,
+              equals: occasion_name,
               mode: 'insensitive',
             },
           },
+          select: { id: true }
         });
 
         if (occasion) {
           filters.occasion_id = occasion.id;
         } else {
-          // If occasion not found, return empty result with a message
           res.status(200).json({
             success: true,
             data: [],
             count: 0,
-            filters: filters,
-            message: `Occasion "${req.query.occasion_name}" not found`,
+            filters,
+            message: `Occasion "${occasion_name}" not found`,
           });
           return;
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching occasion by name:", err);
-        // Continue without occasion filter if there's an error
       }
-    }
-
-    if (req.query.cuisine_type_id && typeof req.query.cuisine_type_id === 'string') {
-      filters.cuisine_type_id = req.query.cuisine_type_id;
-    }
-
-    if (req.query.category_id && typeof req.query.category_id === 'string') {
-      filters.category_id = req.query.category_id;
-    }
-
-
-    if (req.query.search && typeof req.query.search === 'string') {
-      filters.search = req.query.search;
-    }
-
-    if (req.query.menu_type && typeof req.query.menu_type === 'string') {
-      if (req.query.menu_type === 'fixed' || req.query.menu_type === 'customizable') {
-        filters.menu_type = req.query.menu_type;
-      }
-    }
-
-    if (req.query.sort_by && typeof req.query.sort_by === 'string') {
-      const validSortOptions = ['price_asc', 'price_desc', 'rating_desc', 'created_desc'];
-      if (validSortOptions.includes(req.query.sort_by)) {
-        filters.sort_by = req.query.sort_by;
-      }
-    }
-
-    // Support filtering by created_by (USER or CATERER)
-    if (req.query.created_by && typeof req.query.created_by === 'string') {
-      if (req.query.created_by === 'USER' || req.query.created_by === 'CATERER') {
-        filters.created_by = req.query.created_by as 'USER' | 'CATERER';
-      }
-    }
-
-    // Support filtering by user_id (for user-created packages)
-    if (req.query.user_id && typeof req.query.user_id === 'string') {
-      filters.user_id = req.query.user_id;
     }
 
     const packages = await packagesService.getAllPackagesWithFilters(filters);
@@ -208,7 +188,7 @@ export const getAllPackages = async (
       success: true,
       data: packages,
       count: packages.length,
-      filters: filters,
+      filters,
     });
   } catch (error: any) {
     console.error("Error fetching packages:", error);
@@ -282,7 +262,7 @@ export const createCustomPackage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = (req as any).user;
+    const user = req.user;
 
     // JWT payload has userId, not id
     const userId = user?.userId || user?.id;
@@ -347,14 +327,14 @@ export const createCustomPackage = async (
     console.error("Error creating custom package:", error);
     const statusCode =
       error.message?.includes("not found") ||
-      error.message?.includes("not approved") ||
-      error.message?.includes("inactive")
+        error.message?.includes("not approved") ||
+        error.message?.includes("inactive")
         ? 404
         : error.message?.includes("required") ||
           error.message?.includes("must be") ||
           error.message?.includes("Invalid")
-        ? 400
-        : 500;
+          ? 400
+          : 500;
     res.status(statusCode).json({
       success: false,
       error: {
@@ -377,7 +357,7 @@ export const getMyPackages = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = (req as any).user;
+    const user = req.user;
 
     // JWT payload has userId, not id
     const userId = user?.userId || user?.id;

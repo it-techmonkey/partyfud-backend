@@ -70,79 +70,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
   });
 
   // Format the response
-  return packages.map((pkg) => {
-    // Support both minimum_people and people_count during migration
-    const minimumPeople = (pkg as any).minimum_people || (pkg as any).people_count || 1;
-    return {
-      id: pkg.id,
-      name: pkg.name,
-      description: pkg.description,
-      minimum_people: minimumPeople,
-      people_count: minimumPeople, // Keep for backward compatibility
-      cover_image_url: pkg.cover_image_url,
-      total_price: Number(pkg.total_price),
-      is_custom_price: pkg.is_custom_price ?? false, // Include is_custom_price flag
-      price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
-    currency: pkg.currency,
-    rating: pkg.rating,
-    is_available: pkg.is_available,
-    customisation_type: pkg.customisation_type,
-    additional_info: pkg.additional_info,
-    items: pkg.items.map((item) => ({
-      id: item.id,
-      dish: {
-        id: item.dish.id,
-        name: item.dish.name,
-        image_url: item.dish.image_url,
-        price: Number(item.dish.price),
-        currency: item.dish.currency,
-        quantity: item.dish.quantity,
-        pieces: item.dish.pieces,
-        cuisine_type: item.dish.cuisine_type.name,
-        category: item.dish.category?.name || null,
-        sub_category: item.dish.sub_category?.name || null,
-        free_forms: item.dish.free_forms.map((df: any) => ({
-          id: df.freeform.id,
-          name: df.freeform.name,
-          description: df.freeform.description,
-        })),
-      },
-      people_count: item.people_count,
-      quantity: item.quantity,
-      is_optional: item.is_optional,
-      is_addon: item.is_addon,
-      price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
-    })),
-    category_selections: pkg.category_selections.map((selection) => ({
-      id: selection.id,
-      category: {
-        id: selection.category.id,
-        name: selection.category.name,
-        description: selection.category.description,
-      },
-      num_dishes_to_select: selection.num_dishes_to_select,
-    })),
-    occasions: pkg.occasions.map((occ) => ({
-      id: occ.id,
-      occasion: {
-        id: occ.occassion.id,
-        name: occ.occassion.name,
-        image_url: occ.occassion.image_url,
-        description: occ.occassion.description,
-      },
-    })),
-    add_ons: pkg.add_ons ? pkg.add_ons.map((addOn) => ({
-      id: addOn.id,
-      name: addOn.name,
-      description: addOn.description,
-      price: Number(addOn.price),
-      currency: addOn.currency,
-      is_active: addOn.is_active,
-    })) : [],
-    created_at: pkg.created_at,
-    updated_at: pkg.updated_at,
-    };
-  });
+  return packages.map(formatPackageResponse);
 };
 
 /**
@@ -224,73 +152,7 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
   });
 
   // Format the response (same format as getAllPackagesWithFilters)
-  return packages.map((pkg) => ({
-    id: pkg.id,
-    name: pkg.name,
-    description: pkg.description,
-    people_count: pkg.minimum_people,
-    cover_image_url: pkg.cover_image_url,
-    total_price: Number(pkg.total_price),
-    price_per_person: Number(pkg.total_price) / pkg.minimum_people,
-    currency: pkg.currency,
-    rating: pkg.rating,
-    is_available: pkg.is_available,
-    customisation_type: pkg.customisation_type,
-    additional_info: pkg.additional_info,
-    caterer: {
-      id: pkg.caterer.id,
-      name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
-      location: pkg.caterer.catererinfo?.service_area || 
-        (Array.isArray(pkg.caterer.catererinfo?.region) 
-          ? pkg.caterer.catererinfo.region.join(', ') 
-          : pkg.caterer.catererinfo?.region) || null,
-    },
-    items: pkg.items.map((item) => ({
-      id: item.id,
-      dish: {
-        id: item.dish.id,
-        name: item.dish.name,
-        image_url: item.dish.image_url,
-        price: Number(item.dish.price),
-        currency: item.dish.currency,
-        quantity: item.dish.quantity,
-        pieces: item.dish.pieces,
-        cuisine_type: item.dish.cuisine_type.name,
-        category: item.dish.category?.name || null,
-        sub_category: item.dish.sub_category?.name || null,
-        free_forms: item.dish.free_forms.map((df: any) => ({
-          id: df.freeform.id,
-          name: df.freeform.name,
-          description: df.freeform.description,
-        })),
-      },
-      people_count: item.people_count,
-      quantity: item.quantity,
-      is_optional: item.is_optional,
-      is_addon: item.is_addon,
-      price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
-    })),
-    category_selections: pkg.category_selections.map((selection) => ({
-      id: selection.id,
-      category: {
-        id: selection.category.id,
-        name: selection.category.name,
-        description: selection.category.description,
-      },
-      num_dishes_to_select: selection.num_dishes_to_select,
-    })),
-    occasions: pkg.occasions.map((occ) => ({
-      id: occ.id,
-      occasion: {
-        id: occ.occassion.id,
-        name: occ.occassion.name,
-        image_url: occ.occassion.image_url,
-        description: occ.occassion.description,
-      },
-    })),
-    created_at: pkg.created_at,
-    updated_at: pkg.updated_at,
-  }));
+  return packages.map(formatPackageResponse);
 };
 
 /**
@@ -368,82 +230,7 @@ export const getPackageById = async (packageId: string) => {
   }
 
   // Format the response (same format as getPackagesByCatererId)
-  // Support both minimum_people and people_count during migration
-  const minimumPeople = (pkg as any).minimum_people || (pkg as any).people_count || 1;
-  return {
-    id: pkg.id,
-    name: pkg.name,
-    minimum_people: minimumPeople,
-    people_count: minimumPeople, // Keep for backward compatibility
-    description: pkg.description,
-    cover_image_url: pkg.cover_image_url,
-    total_price: Number(pkg.total_price),
-    is_custom_price: pkg.is_custom_price ?? false, // Include is_custom_price flag
-    price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
-    currency: pkg.currency,
-    rating: pkg.rating,
-    is_available: pkg.is_available,
-    customisation_type: pkg.customisation_type,
-    created_by: pkg.created_by,
-    user_id: pkg.user_id,
-    additional_info: pkg.additional_info,
-    items: pkg.items.map((item) => ({
-      id: item.id,
-      dish: {
-        id: item.dish.id,
-        name: item.dish.name,
-        image_url: item.dish.image_url,
-        price: Number(item.dish.price),
-        currency: item.dish.currency,
-        quantity: item.dish.quantity,
-        pieces: item.dish.pieces,
-        cuisine_type: item.dish.cuisine_type.name,
-        category: item.dish.category?.name || null,
-        sub_category: item.dish.sub_category?.name || null,
-        free_forms: item.dish.free_forms.map((df: any) => ({
-          id: df.freeform.id,
-          name: df.freeform.name,
-          description: df.freeform.description,
-        })),
-      },
-      people_count: item.people_count,
-      quantity: item.quantity,
-      is_optional: item.is_optional,
-      is_addon: item.is_addon,
-      price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
-    })),
-    category_selections: pkg.category_selections.map((selection) => ({
-      id: selection.id,
-      category: {
-        id: selection.category.id,
-        name: selection.category.name,
-        description: selection.category.description,
-      },
-      num_dishes_to_select: selection.num_dishes_to_select,
-    })),
-    occasions: pkg.occasions.map((occ) => ({
-      id: occ.id,
-      occasion: {
-        id: occ.occassion.id,
-        name: occ.occassion.name,
-        image_url: occ.occassion.image_url,
-        description: occ.occassion.description,
-      },
-    })),
-    add_ons: pkg.add_ons ? pkg.add_ons.map((addOn) => ({
-      id: addOn.id,
-      package_id: addOn.package_id,
-      name: addOn.name,
-      description: addOn.description,
-      price: Number(addOn.price),
-      currency: addOn.currency,
-      is_active: addOn.is_active,
-      created_at: addOn.created_at,
-      updated_at: addOn.updated_at,
-    })) : [],
-    created_at: pkg.created_at,
-    updated_at: pkg.updated_at,
-  };
+  return formatPackageResponse(pkg);
 };
 
 /**
@@ -678,78 +465,7 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
   });
 
   // Format the response (same format as getPackagesByCatererId)
-  return packages.map((pkg) => {
-    // Support both minimum_people and people_count during migration
-    const minimumPeople = (pkg as any).minimum_people || (pkg as any).people_count || 1;
-    return {
-      id: pkg.id,
-      name: pkg.name,
-      description: pkg.description,
-      minimum_people: minimumPeople,
-      people_count: minimumPeople, // Keep for backward compatibility
-      cover_image_url: pkg.cover_image_url,
-      total_price: Number(pkg.total_price),
-      is_custom_price: pkg.is_custom_price ?? false, // Include is_custom_price flag
-      price_per_person: Number(pkg.total_price) / minimumPeople, // Calculated for backward compatibility
-    currency: pkg.currency,
-    rating: pkg.rating,
-    is_available: pkg.is_available,
-    customisation_type: pkg.customisation_type,
-    caterer: {
-      id: pkg.caterer.id,
-      name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
-      location: pkg.caterer.catererinfo?.service_area || 
-        (Array.isArray(pkg.caterer.catererinfo?.region) 
-          ? pkg.caterer.catererinfo.region.join(', ') 
-          : pkg.caterer.catererinfo?.region) || null,
-    },
-    items: pkg.items.map((item) => ({
-      id: item.id,
-      dish: {
-        id: item.dish.id,
-        name: item.dish.name,
-        image_url: item.dish.image_url,
-        price: Number(item.dish.price),
-        currency: item.dish.currency,
-        quantity: item.dish.quantity,
-        pieces: item.dish.pieces,
-        cuisine_type: item.dish.cuisine_type.name,
-        category: item.dish.category?.name || null,
-        sub_category: item.dish.sub_category?.name || null,
-        free_forms: item.dish.free_forms.map((df: any) => ({
-          id: df.freeform.id,
-          name: df.freeform.name,
-          description: df.freeform.description,
-        })),
-      },
-      people_count: item.people_count,
-      quantity: item.quantity,
-      is_optional: item.is_optional,
-      is_addon: item.is_addon,
-      price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
-    })),
-    category_selections: pkg.category_selections.map((selection) => ({
-      id: selection.id,
-      category: {
-        id: selection.category.id,
-        name: selection.category.name,
-        description: selection.category.description,
-      },
-      num_dishes_to_select: selection.num_dishes_to_select,
-    })),
-    occasions: pkg.occasions.map((occ) => ({
-      id: occ.id,
-      occasion: {
-        id: occ.occassion.id,
-        name: occ.occassion.name,
-        image_url: occ.occassion.image_url,
-        description: occ.occassion.description,
-      },
-    })),
-    created_at: pkg.created_at,
-    updated_at: pkg.updated_at,
-    };
-  });
+  return packages.map(formatPackageResponse);
 };
 
 /**
@@ -1030,27 +746,47 @@ export const createCustomPackage = async (
   }
 
   // Format the response (same format as other package endpoints)
-  // Use the minimumPeople variable already declared at the beginning of the function
+  return formatPackageResponse(completePackage);
+};
+
+
+/**
+ * Helper to format package response
+ * Standardizes the response format across all package endpoints
+ */
+const formatPackageResponse = (pkg: any) => {
+  // Support both minimum_people and people_count during migration
+  const minimumPeople = pkg.minimum_people || pkg.people_count || 1;
+
   return {
-    id: completePackage.id,
-    name: completePackage.name,
+    id: pkg.id,
+    name: pkg.name,
+    description: pkg.description,
     minimum_people: minimumPeople,
     people_count: minimumPeople, // Keep for backward compatibility
-    cover_image_url: completePackage.cover_image_url,
-    total_price: Number(completePackage.total_price),
-    price_per_person: Number(completePackage.total_price) / minimumPeople, // Calculated for backward compatibility
-    currency: completePackage.currency,
-    rating: completePackage.rating,
-    is_available: completePackage.is_available,
-    customisation_type: completePackage.customisation_type,
-    caterer: {
-      id: completePackage.caterer.id,
-      name: completePackage.caterer.catererinfo?.business_name || completePackage.caterer.company_name || "Unknown",
-      location: completePackage.caterer.catererinfo?.service_area || completePackage.caterer.catererinfo?.region || null,
-    },
-    items: completePackage.items.map((item) => ({
+    cover_image_url: pkg.cover_image_url,
+    total_price: Number(pkg.total_price),
+    is_custom_price: pkg.is_custom_price ?? false,
+    price_per_person: Number(pkg.total_price) / minimumPeople,
+    currency: pkg.currency,
+    rating: pkg.rating,
+    is_available: pkg.is_available,
+    customisation_type: pkg.customisation_type,
+    created_by: pkg.created_by,
+    user_id: pkg.user_id,
+    additional_info: pkg.additional_info,
+    // Only include caterer if the relation was fetched
+    caterer: pkg.caterer ? {
+      id: pkg.caterer.id,
+      name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
+      location: pkg.caterer.catererinfo?.service_area ||
+        (Array.isArray(pkg.caterer.catererinfo?.region)
+          ? pkg.caterer.catererinfo.region.join(', ')
+          : pkg.caterer.catererinfo?.region) || null,
+    } : undefined,
+    items: pkg.items?.map((item: any) => ({
       id: item.id,
-      dish: {
+      dish: item.dish ? {
         id: item.dish.id,
         name: item.dish.name,
         image_url: item.dish.image_url,
@@ -1058,22 +794,22 @@ export const createCustomPackage = async (
         currency: item.dish.currency,
         quantity: item.dish.quantity,
         pieces: item.dish.pieces,
-        cuisine_type: item.dish.cuisine_type.name,
+        cuisine_type: item.dish.cuisine_type?.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
-        free_forms: item.dish.free_forms.map((df: any) => ({
+        free_forms: item.dish.free_forms?.map((df: any) => ({
           id: df.freeform.id,
           name: df.freeform.name,
           description: df.freeform.description,
-        })),
-      },
+        })) || [],
+      } : null,
       people_count: item.people_count,
       quantity: item.quantity,
       is_optional: item.is_optional,
       is_addon: item.is_addon,
       price_at_time: item.price_at_time ? Number(item.price_at_time) : null,
-    })),
-    category_selections: completePackage.category_selections.map((selection) => ({
+    })) || [],
+    category_selections: pkg.category_selections?.map((selection: any) => ({
       id: selection.id,
       category: {
         id: selection.category.id,
@@ -1081,8 +817,8 @@ export const createCustomPackage = async (
         description: selection.category.description,
       },
       num_dishes_to_select: selection.num_dishes_to_select,
-    })),
-    occasions: completePackage.occasions.map((occ) => ({
+    })) || [],
+    occasions: pkg.occasions?.map((occ: any) => ({
       id: occ.id,
       occasion: {
         id: occ.occassion.id,
@@ -1090,9 +826,19 @@ export const createCustomPackage = async (
         image_url: occ.occassion.image_url,
         description: occ.occassion.description,
       },
-    })),
-    created_at: completePackage.created_at,
-    updated_at: completePackage.updated_at,
+    })) || [],
+    add_ons: pkg.add_ons ? pkg.add_ons.map((addOn: any) => ({
+      id: addOn.id,
+      package_id: addOn.package_id,
+      name: addOn.name,
+      description: addOn.description,
+      price: Number(addOn.price),
+      currency: addOn.currency,
+      is_active: addOn.is_active,
+      created_at: addOn.created_at,
+      updated_at: addOn.updated_at,
+    })) : [],
+    created_at: pkg.created_at,
+    updated_at: pkg.updated_at,
   };
 };
-
