@@ -1,4 +1,5 @@
 import prisma from "../../../lib/prisma";
+import { sendOrderConfirmationEmail, OrderConfirmationData } from "../../../lib/email";
 
 /**
  * Create an order from cart items
@@ -146,6 +147,96 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
 
     return newOrder;
   });
+
+  // Send order confirmation email
+  try {
+    // Fetch user details
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (user && user.email) {
+      // Get the first caterer from order items (assuming all items are from same caterer)
+      const firstItem = order.items[0];
+      const caterer = firstItem?.package?.caterer;
+      const catererInfo = caterer?.catererinfo;
+
+      // Format invoice number (use first 8 characters of order ID)
+      const invoiceNo = order.id.substring(0, 8).toUpperCase();
+
+      // Format date
+      const orderDate = new Date(order.created_at);
+      const formattedDate = orderDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+
+      // Calculate items for email
+      const emailItems: OrderConfirmationData['items'] = [];
+      let addOnsTotal = 0;
+
+      for (const item of order.items) {
+        // Add package item
+        emailItems.push({
+          description: item.package.name,
+          unitPrice: Number(item.price_at_time),
+          quantity: 1,
+          total: Number(item.price_at_time),
+        });
+
+        // Add add-ons if any
+        if (item.add_ons && item.add_ons.length > 0) {
+          for (const addOn of item.add_ons) {
+            const addOnTotal = Number(addOn.price_at_time) * (addOn.quantity || 1);
+            addOnsTotal += addOnTotal;
+            emailItems.push({
+              description: `${addOn.add_on.name} (Add-on)`,
+              unitPrice: Number(addOn.price_at_time),
+              quantity: addOn.quantity || 1,
+              total: addOnTotal,
+            });
+          }
+        }
+      }
+
+      // Calculate totals
+      const subtotal = Number(order.total_price);
+      const taxRate = 10; // 10% tax as per PDF
+      const tax = Math.round(subtotal * (taxRate / 100));
+      const total = subtotal + tax;
+
+      const emailData: OrderConfirmationData = {
+        invoiceNo,
+        date: formattedDate,
+        user: {
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          company: user.company_name || undefined,
+          address: undefined, // Add address if available in user model
+        },
+        caterer: {
+          name: catererInfo?.business_name || caterer?.first_name + ' ' + caterer?.last_name || 'Party Fud',
+          company: catererInfo?.business_name || undefined,
+          address: catererInfo?.service_area || undefined,
+        },
+        items: emailItems,
+        subtotal,
+        tax,
+        taxRate,
+        total,
+        currency: order.currency,
+      };
+
+      // Send email asynchronously (don't wait for it)
+      sendOrderConfirmationEmail(emailData).catch((error) => {
+        console.error('Failed to send order confirmation email:', error);
+      });
+    }
+  } catch (error) {
+    console.error('Error preparing order confirmation email:', error);
+    // Don't throw - email failure shouldn't break order creation
+  }
 
   return {
     id: order.id,
