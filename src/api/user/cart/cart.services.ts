@@ -62,6 +62,13 @@ export const createCartItem = async (
       is_active: true,
       is_available: true,
     },
+    include: {
+      items: {
+        include: {
+          dish: true,
+        },
+      },
+    },
   });
 
   if (!packageData) {
@@ -85,10 +92,42 @@ export const createCartItem = async (
     throw new Error("Package already exists in cart. Use update endpoint to modify it.");
   }
 
-  // Calculate base price
-  let basePrice = input.price_at_time
-    ? input.price_at_time
-    : Number(packageData.total_price);
+  // Calculate base price based on guest count and serves_people
+  let basePrice = 0;
+  const guestCount = input.guests || packageData.minimum_people || 1;
+
+  if (input.price_at_time) {
+    // Use provided price_at_time if explicitly set
+    basePrice = input.price_at_time;
+  } else if (packageData.is_custom_price) {
+    // For custom prices, use total_price as-is (doesn't scale with guest count)
+    basePrice = Number(packageData.total_price);
+  } else if (packageData.items && packageData.items.length > 0) {
+    // Calculate from package items using serves_people
+    const { calculateDishPriceForGuests } = await import('../../caterer/packages/packages.services');
+    
+    for (const item of packageData.items) {
+      const dishPrice = typeof item.dish.price === 'number' ? item.dish.price : parseInt(String(item.dish.price), 10);
+      const quantity = item.quantity || 1;
+      const itemPrice = item.price_at_time 
+        ? (typeof item.price_at_time === 'number' ? item.price_at_time : parseInt(String(item.price_at_time), 10))
+        : dishPrice;
+      
+      const dishPriceForGuests = calculateDishPriceForGuests(
+        itemPrice,
+        item.dish.serves_people,
+        guestCount
+      );
+      
+      basePrice += Math.round(dishPriceForGuests * quantity);
+    }
+  } else {
+    // Fallback to simple scaling if no items
+    const peopleCount = packageData.minimum_people || 1;
+    const totalPrice = Number(packageData.total_price);
+    const pricePerPerson = peopleCount > 0 ? totalPrice / peopleCount : 0;
+    basePrice = Math.round(pricePerPerson * guestCount);
+  }
 
   // Calculate add-ons price if provided
   let addOnsTotalPrice = 0;
@@ -305,13 +344,60 @@ export const updateCartItem = async (
     }
   }
 
-  // Recalculate total price
+  // Recalculate total price based on guest count and serves_people
   const packageData = await prisma.package.findUnique({
     where: { id: cartItem.package_id },
+    include: {
+      items: {
+        include: {
+          dish: true,
+        },
+      },
+    },
   });
-  const basePrice = input.price_at_time !== undefined
-    ? input.price_at_time
-    : (packageData ? Number(packageData.total_price) : Number(cartItem.price_at_time || 0));
+
+  let basePrice = 0;
+  const guestCount = input.guests !== undefined ? input.guests : (cartItem.guests || packageData?.minimum_people || 1);
+
+  if (input.price_at_time !== undefined) {
+    // Use provided price_at_time if explicitly set
+    basePrice = input.price_at_time;
+  } else if (packageData) {
+    // Recalculate based on package items and serves_people
+    if (packageData.is_custom_price) {
+      // For custom prices, use total_price as-is (doesn't scale with guest count)
+      basePrice = Number(packageData.total_price);
+    } else if (packageData.items && packageData.items.length > 0) {
+      // Calculate from package items using serves_people
+      const { calculateDishPriceForGuests } = await import('../../caterer/packages/packages.services');
+      
+      for (const item of packageData.items) {
+        const dishPrice = typeof item.dish.price === 'number' ? item.dish.price : parseInt(String(item.dish.price), 10);
+        const quantity = item.quantity || 1;
+        const itemPrice = item.price_at_time 
+          ? (typeof item.price_at_time === 'number' ? item.price_at_time : parseInt(String(item.price_at_time), 10))
+          : dishPrice;
+        
+        const dishPriceForGuests = calculateDishPriceForGuests(
+          itemPrice,
+          item.dish.serves_people,
+          guestCount
+        );
+        
+        basePrice += Math.round(dishPriceForGuests * quantity);
+      }
+    } else {
+      // Fallback to simple scaling if no items
+      const peopleCount = packageData.minimum_people || 1;
+      const totalPrice = Number(packageData.total_price);
+      const pricePerPerson = peopleCount > 0 ? totalPrice / peopleCount : 0;
+      basePrice = Math.round(pricePerPerson * guestCount);
+    }
+  } else {
+    // Fallback to existing price_at_time
+    basePrice = Number(cartItem.price_at_time || 0);
+  }
+
   const newTotalPrice = basePrice + addOnsTotalPrice;
 
   // Update cart item

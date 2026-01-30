@@ -123,6 +123,7 @@ export const createDish = async (
       quantity,
       pieces,
       price,
+      serves_people,
       currency,
       is_active,
     } = req.body;
@@ -137,6 +138,10 @@ export const createDish = async (
     const parsedPrice = typeof price === 'string' 
       ? parseInt(price, 10) 
       : (typeof price === 'number' ? Math.round(price) : 0);
+
+    const parsedServesPeople = serves_people 
+      ? (typeof serves_people === 'string' ? parseInt(serves_people, 10) : serves_people)
+      : undefined;
 
     const parsedIsActive = typeof is_active === 'string'
       ? is_active === 'true' || is_active === '1'
@@ -242,6 +247,7 @@ export const createDish = async (
       quantity: parsedQuantity,
       pieces: parsedPieces,
       price: parsedPrice,
+      serves_people: parsedServesPeople,
       currency: currency || 'AED',
       is_active: parsedIsActive,
       freeform_ids: freeformIdsArray,
@@ -312,6 +318,7 @@ export const updateDish = async (
       quantity,
       pieces,
       price,
+      serves_people,
       currency,
       is_active,
     } = req.body;
@@ -325,6 +332,12 @@ export const updateDish = async (
 
     const parsedPrice = price !== undefined
       ? (typeof price === 'string' ? parseInt(price, 10) : Math.round(price))
+      : undefined;
+
+    const parsedServesPeople = serves_people !== undefined
+      ? (serves_people === null || serves_people === '' 
+          ? null 
+          : (typeof serves_people === 'string' ? parseInt(serves_people, 10) : serves_people))
       : undefined;
 
     const parsedIsActive = is_active !== undefined
@@ -341,6 +354,7 @@ export const updateDish = async (
     if (parsedQuantity !== undefined) updateData.quantity = parsedQuantity;
     if (parsedPieces !== undefined) updateData.pieces = parsedPieces;
     if (parsedPrice !== undefined) updateData.price = parsedPrice;
+    if (parsedServesPeople !== undefined) updateData.serves_people = parsedServesPeople;
     if (currency !== undefined) updateData.currency = currency;
     if (parsedIsActive !== undefined) updateData.is_active = parsedIsActive;
 

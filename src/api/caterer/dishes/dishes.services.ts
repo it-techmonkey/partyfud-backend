@@ -9,6 +9,7 @@ export interface CreateDishData {
   quantity?: string;
   pieces?: number;
   price: number;
+  serves_people?: number; // Optional: number of people this dish serves (for price calculation)
   currency?: string;
   is_active?: boolean;
   freeform_ids?: string[]; // Array of FreeForm IDs
@@ -23,6 +24,7 @@ export interface UpdateDishData {
   quantity?: string;
   pieces?: number;
   price?: number;
+  serves_people?: number; // Optional: number of people this dish serves (for price calculation)
   currency?: string;
   is_active?: boolean;
 }
@@ -243,6 +245,7 @@ export const createDish = async (catererId: string, data: CreateDishData) => {
       quantity: data.quantity,
       pieces: data.pieces ?? 1,
       price: data.price,
+      serves_people: data.serves_people ?? null,
       currency: data.currency || "AED",
       is_active: data.is_active ?? true,
       free_forms: data.freeform_ids && data.freeform_ids.length > 0 ? {
@@ -293,6 +296,7 @@ export const updateDish = async (
     quantity: data.quantity,
     pieces: data.pieces,
     price: data.price,
+    serves_people: data.serves_people !== undefined ? data.serves_people : undefined,
     currency: data.currency,
     is_active: data.is_active,
   };

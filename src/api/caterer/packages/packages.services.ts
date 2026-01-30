@@ -43,8 +43,29 @@ export interface UpdatePackageData {
 }
 
 /**
+ * Calculate dish price based on guest count and serves_people
+ * If serves_people is set: calculate servings needed (ceil) and multiply by dish price
+ * If serves_people is null: use current behavior (price * guest_count)
+ */
+export const calculateDishPriceForGuests = (
+  dishPrice: number,
+  servesPeople: number | null | undefined,
+  guestCount: number
+): number => {
+  if (servesPeople && servesPeople > 0) {
+    // Calculate servings needed: ceil(guest_count / serves_people)
+    // If guest_count < serves_people, treat as 1 serving
+    const servings = guestCount <= servesPeople ? 1 : Math.ceil(guestCount / servesPeople);
+    return dishPrice * servings;
+  } else {
+    // Fallback to current behavior: price * guest_count
+    return dishPrice * guestCount;
+  }
+};
+
+/**
  * Calculate package price from its items
- * Formula: sum of (dish.price * minimum_people * quantity) for all items
+ * Formula: sum of (dish.price calculated for minimum_people * quantity) for all items
  */
 export const calculatePackagePrice = async (
   packageId: string,
@@ -65,7 +86,15 @@ export const calculatePackagePrice = async (
     const itemPrice = item.price_at_time 
       ? (typeof item.price_at_time === 'number' ? item.price_at_time : parseInt(String(item.price_at_time), 10))
       : dishPrice;
-    totalPrice += Math.round(itemPrice * minimumPeople * quantity);
+    
+    // Calculate price for this dish based on serves_people
+    const dishPriceForGuests = calculateDishPriceForGuests(
+      itemPrice,
+      item.dish.serves_people,
+      minimumPeople
+    );
+    
+    totalPrice += Math.round(dishPriceForGuests * quantity);
   }
 
   return totalPrice;
@@ -120,7 +149,18 @@ export const getPackagesByCatererId = async (catererId: string) => {
     console.log("✅ [SERVICE] Found", packages.length, "packages");
     
     // Format packages to ensure proper serialization (convert Decimal to Number)
-    const formattedPackages = packages.map((pkg) => {
+    // Recalculate prices for non-custom packages to ensure serves_people is applied
+    const formattedPackages = await Promise.all(packages.map(async (pkg) => {
+      let totalPrice = pkg.total_price ? (typeof pkg.total_price === 'number' ? pkg.total_price : parseInt(String(pkg.total_price), 10)) : 0;
+      const isCustomPrice = pkg.is_custom_price || false;
+      
+      // Recalculate price for non-custom packages if they have items
+      // This ensures serves_people is properly applied even if dishes were updated
+      if (!isCustomPrice && pkg.items && pkg.items.length > 0) {
+        const minimumPeople = pkg.minimum_people || 1;
+        totalPrice = await calculatePackagePrice(pkg.id, minimumPeople);
+      }
+      
       const formatted = {
         id: pkg.id,
         name: pkg.name,
@@ -128,8 +168,8 @@ export const getPackagesByCatererId = async (catererId: string) => {
         minimum_people: pkg.minimum_people,
         people_count: pkg.minimum_people, // Include for backward compatibility
         cover_image_url: pkg.cover_image_url,
-        total_price: pkg.total_price ? (typeof pkg.total_price === 'number' ? pkg.total_price : parseInt(String(pkg.total_price), 10)) : 0,
-        is_custom_price: pkg.is_custom_price || false, // Track if price was manually set
+        total_price: totalPrice,
+        is_custom_price: isCustomPrice, // Track if price was manually set
         currency: pkg.currency,
         rating: pkg.rating,
         is_active: pkg.is_active,
@@ -164,6 +204,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
             quantity: item.dish.quantity,
             pieces: item.dish.pieces,
             price: typeof item.dish.price === 'number' ? item.dish.price : parseInt(String(item.dish.price), 10),
+            serves_people: item.dish.serves_people,
             currency: item.dish.currency,
             is_active: item.dish.is_active,
             created_at: item.dish.created_at,
@@ -201,7 +242,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
         })) : [],
       };
       return formatted;
-    });
+    }));
     
     return formattedPackages;
   } catch (error: any) {

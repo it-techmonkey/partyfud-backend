@@ -139,6 +139,7 @@ model Dish {
   quantity       String?
   pieces          Int            @default(1)
   price           Int
+  serves_people   Int?            // Optional: number of people this dish serves (for price calculation)
   currency        String         @default("AED")
   is_active       Boolean        @default(true)
   created_at      DateTime       @default(now())

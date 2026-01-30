@@ -70,7 +70,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
   });
 
   // Format the response
-  return packages.map(formatPackageResponse);
+  return await Promise.all(packages.map(async (pkg) => await formatPackageResponse(pkg)));
 };
 
 /**
@@ -152,7 +152,7 @@ export const getPackagesByOccasionName = async (occasionName: string) => {
   });
 
   // Format the response (same format as getAllPackagesWithFilters)
-  return packages.map(formatPackageResponse);
+  return await Promise.all(packages.map(async (pkg) => await formatPackageResponse(pkg)));
 };
 
 /**
@@ -230,7 +230,7 @@ export const getPackageById = async (packageId: string) => {
   }
 
   // Format the response (same format as getPackagesByCatererId)
-  return formatPackageResponse(pkg);
+  return await formatPackageResponse(pkg);
 };
 
 /**
@@ -465,7 +465,8 @@ export const getAllPackagesWithFilters = async (filters: PackageFilters = {}) =>
   });
 
   // Format the response (same format as getPackagesByCatererId)
-  return packages.map(formatPackageResponse);
+  // Recalculate prices for non-custom packages to ensure serves_people is applied
+  return await Promise.all(packages.map(async (pkg) => await formatPackageResponse(pkg)));
 };
 
 /**
@@ -753,10 +754,21 @@ export const createCustomPackage = async (
 /**
  * Helper to format package response
  * Standardizes the response format across all package endpoints
+ * Recalculates prices for non-custom packages to ensure serves_people is applied
  */
-const formatPackageResponse = (pkg: any) => {
+const formatPackageResponse = async (pkg: any) => {
   // Support both minimum_people and people_count during migration
   const minimumPeople = pkg.minimum_people || pkg.people_count || 1;
+  
+  let totalPrice = Number(pkg.total_price);
+  const isCustomPrice = pkg.is_custom_price ?? false;
+  
+  // Recalculate price for non-custom packages if they have items
+  // This ensures serves_people is properly applied even if dishes were updated
+  if (!isCustomPrice && pkg.items && pkg.items.length > 0) {
+    const { calculatePackagePrice } = await import('../../caterer/packages/packages.services');
+    totalPrice = await calculatePackagePrice(pkg.id, minimumPeople);
+  }
 
   return {
     id: pkg.id,
@@ -765,9 +777,9 @@ const formatPackageResponse = (pkg: any) => {
     minimum_people: minimumPeople,
     people_count: minimumPeople, // Keep for backward compatibility
     cover_image_url: pkg.cover_image_url,
-    total_price: Number(pkg.total_price),
-    is_custom_price: pkg.is_custom_price ?? false,
-    price_per_person: Number(pkg.total_price) / minimumPeople,
+    total_price: totalPrice,
+    is_custom_price: isCustomPrice,
+    price_per_person: totalPrice / minimumPeople,
     currency: pkg.currency,
     rating: pkg.rating,
     is_available: pkg.is_available,
@@ -794,6 +806,7 @@ const formatPackageResponse = (pkg: any) => {
         currency: item.dish.currency,
         quantity: item.dish.quantity,
         pieces: item.dish.pieces,
+        serves_people: item.dish.serves_people,
         cuisine_type: item.dish.cuisine_type?.name,
         category: item.dish.category?.name || null,
         sub_category: item.dish.sub_category?.name || null,
