@@ -7,13 +7,32 @@ This document explains how to configure the email confirmation system for order 
 Add the following environment variables to your `.env` file:
 
 ```env
-# SMTP Email Configuration
+# SMTP Email Configuration (Single SMTP Server - Used for all emails)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
+
+# Email Sender Addresses (These are the "from" addresses for different email types)
+EMAIL_PARTNERSHIP=partnership@partyfud.com
+EMAIL_ORDER=order@partyfud.com
+
+# Frontend URL (Optional - for login links in emails)
+FRONTEND_URL=https://uae.partyfud.com
 ```
+
+### Important Notes:
+
+1. **Single SMTP Configuration**: You only need ONE SMTP server configuration. The same SMTP credentials are used to send emails from both `EMAIL_PARTNERSHIP` and `EMAIL_ORDER` addresses.
+
+2. **Email Address Setup**: 
+   - The email addresses (`EMAIL_PARTNERSHIP` and `EMAIL_ORDER`) must be configured on your email server/domain
+   - For Gmail: You can use Gmail aliases or set up these addresses as forwarding addresses
+   - For custom domains: Configure these as email aliases or separate mailboxes on your mail server
+   - The SMTP server must allow sending emails with these "from" addresses
+
+3. **SMTP Authentication**: The `SMTP_USER` should be an email account that has permission to send emails from both addresses, or you can use a service account that has been granted this permission.
 
 ## Recommended Free SMTP Services
 
@@ -118,17 +137,56 @@ SMTP_USER=your-username
 SMTP_PASSWORD=your-password
 ```
 
+## Email Types
+
+The application sends 4 types of emails:
+
+1. **Onboarding Completion** (from `EMAIL_PARTNERSHIP`)
+   - Sent to caterer when they complete onboarding
+   
+2. **Caterer Approval** (from `EMAIL_PARTNERSHIP`)
+   - Sent to caterer when admin approves their account
+   - Includes direct login link
+   
+3. **Order Confirmation** (from `EMAIL_ORDER`)
+   - Sent to user when they place an order
+   - Includes PDF attachment
+   
+4. **New Order Notification** (from `EMAIL_ORDER`)
+   - Sent to caterer when a user places an order
+   - Includes customer contact information and order details
+
 ## Testing
 
-The email system will automatically send confirmation emails when orders are created. If email configuration is missing, the system will log a warning but won't break order creation.
+The email system will automatically send emails when:
+- A caterer completes onboarding
+- An admin approves a caterer
+- A user places an order (both user and caterer receive emails)
 
-## Email Template
+If email configuration is missing, the system will log a warning but won't break the main functionality.
 
-The email template matches the PDF format provided and includes:
-- Invoice number (first 8 characters of order ID)
-- Order date
-- User details (name, email, company)
-- Service provider details (caterer information)
-- Order items table
-- Subtotal, tax (10%), and total
-- Footer with contact information
+## Email Templates
+
+All emails use HTML formatting and match the PartyFud brand design:
+
+- **Order Confirmation Email**: Matches the PDF format and includes:
+  - Invoice number (first 8 characters of order ID)
+  - Order date
+  - User details (name, email, company)
+  - Service provider details (caterer information)
+  - Order items table
+  - Subtotal, tax (10%), and total
+  - PDF attachment
+  - Footer with contact information
+
+- **Onboarding & Approval Emails**: Professional HTML templates with:
+  - PartyFud branding
+  - Clear messaging
+  - Action buttons/links
+  - Contact information
+
+- **New Order Notification**: Includes:
+  - Order details (number, date, package, guests, location)
+  - Customer contact information (name, email, phone)
+  - Order items list
+  - Link to order dashboard

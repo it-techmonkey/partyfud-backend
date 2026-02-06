@@ -232,6 +232,100 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       sendOrderConfirmationEmail(emailData).catch((error) => {
         console.error('Failed to send order confirmation email:', error);
       });
+
+      // Send new order notification email to caterer(s)
+      try {
+        const { sendNewOrderNotificationEmail } = await import('../../../lib/email');
+        type NewOrderNotificationData = import('../../../lib/email').NewOrderNotificationData;
+        
+        // Group order items by caterer
+        const catererOrders = new Map<string, typeof order.items>();
+        for (const item of order.items) {
+          const catererId = item.package.caterer.id;
+          if (!catererOrders.has(catererId)) {
+            catererOrders.set(catererId, []);
+          }
+          catererOrders.get(catererId)!.push(item);
+        }
+
+        // Send email to each caterer
+        for (const [catererId, items] of Array.from(catererOrders.entries())) {
+          const firstItem = items[0];
+          const caterer = firstItem.package.caterer;
+          const catererInfo = caterer.catererinfo;
+          
+          if (caterer.email) {
+            // Format invoice number
+            const invoiceNo = order.id.substring(0, 8).toUpperCase();
+            
+            // Format date
+            const orderDate = new Date(order.created_at);
+            const formattedDate = orderDate.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            });
+
+            // Prepare items for email
+            const emailItems: NewOrderNotificationData['items'] = [];
+            for (const item of items) {
+              emailItems.push({
+                description: item.package.name,
+                quantity: 1,
+                price: Number(item.price_at_time),
+              });
+
+              // Add add-ons if any
+              if (item.add_ons && item.add_ons.length > 0) {
+                for (const addOn of item.add_ons) {
+                  emailItems.push({
+                    description: `${addOn.add_on.name} (Add-on)`,
+                    quantity: addOn.quantity || 1,
+                    price: Number(addOn.price_at_time) * (addOn.quantity || 1),
+                  });
+                }
+              }
+            }
+
+            // Calculate total for this caterer's items
+            const catererTotal = items.reduce((sum, item) => sum + Number(item.price_at_time), 0);
+
+            // Generate order URL
+            const frontendUrl = process.env.FRONTEND_URL || 'https://uae.partyfud.com';
+            const orderUrl = `${frontendUrl}/caterer/orders`;
+
+            const notificationData: NewOrderNotificationData = {
+              orderNumber: invoiceNo,
+              orderDate: formattedDate,
+              catererEmail: caterer.email,
+              catererName: catererInfo?.business_name || `${caterer.first_name} ${caterer.last_name}`,
+              customerName: `${user.first_name} ${user.last_name}`,
+              customerEmail: user.email,
+              customerPhone: user.phone || undefined,
+              packageName: items.length === 1 ? items[0].package.name : `${items.length} Packages`,
+              guestCount: items[0].guests || 1,
+              eventDate: items[0].date ? new Date(items[0].date).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              }) : undefined,
+              eventTime: items[0].event_time || undefined,
+              location: items[0].location || undefined,
+              totalPrice: catererTotal,
+              currency: order.currency,
+              items: emailItems,
+              orderUrl,
+            };
+
+            sendNewOrderNotificationEmail(notificationData).catch((error) => {
+              console.error('Failed to send new order notification email to caterer:', error);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error preparing new order notification email:', error);
+        // Don't throw - email failure shouldn't break order creation
+      }
     }
   } catch (error) {
     console.error('Error preparing order confirmation email:', error);

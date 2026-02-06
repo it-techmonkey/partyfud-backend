@@ -210,7 +210,7 @@ export const submit = async (userId: string, data: OnboardingData) => {
   }
 
   // Update user type to CATERER and company_name upon successful onboarding submission
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: userId },
     data: { 
       type: "CATERER",
@@ -218,8 +218,16 @@ export const submit = async (userId: string, data: OnboardingData) => {
     },
   });
 
-  // TODO: Send email notification to admin
-  // TODO: Send confirmation email to caterer
+  // Send onboarding completion email to caterer
+  try {
+    const { sendOnboardingCompletionEmail } = await import('../../../lib/email');
+    const catererName = data.business_name || `${user.first_name} ${user.last_name}`;
+    sendOnboardingCompletionEmail(user.email, catererName).catch((error) => {
+      console.error('Failed to send onboarding completion email:', error);
+    });
+  } catch (error) {
+    console.error('Error sending onboarding completion email:', error);
+  }
 
   return updated;
 };

@@ -212,10 +212,26 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
 
     // Update the user table
     if (Object.keys(userUpdateData).length > 0) {
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: updatedCatererInfo.caterer_id },
         data: userUpdateData,
       });
+
+      // Send approval email if status is APPROVED
+      if (data.status === 'APPROVED') {
+        try {
+          const { sendCatererApprovalEmail } = await import('../../../lib/email');
+          const catererName = updatedCatererInfo.business_name || `${updatedUser.first_name} ${updatedUser.last_name}`;
+          // Generate login URL - adjust based on your frontend URL structure
+          const frontendUrl = process.env.FRONTEND_URL || 'https://uae.partyfud.com';
+          const loginUrl = `${frontendUrl}/caterer/dashboard`;
+          sendCatererApprovalEmail(updatedUser.email, catererName, loginUrl).catch((error) => {
+            console.error('Failed to send caterer approval email:', error);
+          });
+        } catch (error) {
+          console.error('Error sending caterer approval email:', error);
+        }
+      }
 
       // Refresh the caterer info to get updated user data
       const refreshedCatererInfo = await prisma.catererinfo.findUnique({

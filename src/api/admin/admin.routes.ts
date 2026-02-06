@@ -2,6 +2,7 @@ import { Router } from "express";
 import catererinfoRoutes from "./catererinfo/catererinfo.routes";
 import dashboardRoutes from "./dashboard/dashboard.routes";
 import metadataRoutes from "./metadata/metadata.routes";
+import ordersRoutes from "./orders/orders.routes";
 
 const router = Router();
 
@@ -13,6 +14,9 @@ router.use("/dashboard", dashboardRoutes);
 
 // Mount metadata routes at /metadata
 router.use("/metadata", metadataRoutes);
+
+// Mount orders routes at /orders
+router.use("/orders", ordersRoutes);
 
 // Placeholder route - to be expanded
 router.get("/", (_req, res) => {
