@@ -11,6 +11,7 @@ export interface CreateOrderInput {
     location?: string;
     guests?: number;
     date?: Date;
+    event_time?: string;
     price_at_time: number;
     add_ons?: Array<{
       add_on_id: string;
@@ -54,6 +55,7 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       location: item.location || undefined,
       guests: item.guests || undefined,
       date: item.date || undefined,
+      event_time: item.event_time || undefined,
       price_at_time: item.price_at_time
         ? Number(item.price_at_time)
         : Number(item.package.total_price),
@@ -100,6 +102,7 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
             location: item.location,
             guests: item.guests,
             date: item.date,
+            event_time: item.event_time,
             price_at_time: item.price_at_time,
             add_ons: item.add_ons && item.add_ons.length > 0 ? {
               create: item.add_ons.map(addOn => ({
@@ -237,7 +240,7 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       try {
         const { sendNewOrderNotificationEmail } = await import('../../../lib/email');
         type NewOrderNotificationData = import('../../../lib/email').NewOrderNotificationData;
-        
+
         // Group order items by caterer
         const catererOrders = new Map<string, typeof order.items>();
         for (const item of order.items) {
@@ -253,11 +256,11 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
           const firstItem = items[0];
           const caterer = firstItem.package.caterer;
           const catererInfo = caterer.catererinfo;
-          
+
           if (caterer.email) {
             // Format invoice number
             const invoiceNo = order.id.substring(0, 8).toUpperCase();
-            
+
             // Format date
             const orderDate = new Date(order.created_at);
             const formattedDate = orderDate.toLocaleDateString('en-GB', {
