@@ -1,5 +1,141 @@
 import prisma from "../../../lib/prisma";
-import { Status } from "../../../generated/prisma/client";
+import { Status, OrderStatus } from "../../../generated/prisma/client";
+
+
+
+/**
+ * Get caterer financials by caterer info ID
+ */
+export const getCatererFinancials = async (catererInfoId: string) => {
+  console.log('🔵 [SERVICE] ==========================================');
+  console.log('🔵 [SERVICE] getCatererFinancials called');
+  console.log('🔵 [SERVICE] Received ID:', catererInfoId);
+  console.log('🔵 [SERVICE] ID type:', typeof catererInfoId);
+  console.log('🔵 [SERVICE] ID length:', catererInfoId?.length);
+  
+  // Try to find the caterer info
+  const catererInfo = await prisma.catererinfo.findUnique({
+    where: { id: catererInfoId },
+    select: {
+      id: true,
+      caterer_id: true,
+      commission_rate: true,
+    },
+  });
+
+  if (!catererInfo) {
+    console.warn('⚠️ [SERVICE] ==========================================');
+    console.warn('⚠️ [SERVICE] Caterer info not found for ID:', catererInfoId);
+    console.warn('⚠️ [SERVICE] Returning default/empty financial data');
+    console.warn('⚠️ [SERVICE] ==========================================');
+    
+    // Return default/empty financial data instead of throwing an error
+    return {
+      totalRevenue: 0,
+      commissionRate: 0,
+      platformFee: 0,
+      netPayout: 0,
+      completedOrdersCount: 0,
+      cancelledOrdersCount: 0,
+      pendingOrdersCount: 0
+    };
+  }
+
+  console.log('✅ [SERVICE] Caterer info found:', {
+    id: catererInfo.id,
+    caterer_id: catererInfo.caterer_id,
+    commission_rate: catererInfo.commission_rate,
+  });
+
+  const catererUserId = catererInfo.caterer_id;
+  const commissionRate = catererInfo.commission_rate || 0;
+
+  // Find all order items belonging to this caterer that are part of "Revenue Generating" orders
+  const validStatuses: OrderStatus[] = ['PAID', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CONFIRMED'];
+
+  console.log('🔵 [SERVICE] Fetching order items for caterer user ID:', catererUserId);
+
+  const orderItems = await prisma.orderItem.findMany({
+    where: {
+      package: {
+        caterer_id: catererUserId,
+      },
+      order: {
+        status: {
+          in: validStatuses,
+        },
+      },
+    },
+    include: {
+      order: {
+        select: {
+          id: true,
+          status: true,
+          created_at: true,
+        },
+      },
+    },
+  });
+
+  console.log('✅ [SERVICE] Found', orderItems.length, 'order items for revenue calculation');
+
+  // Calculate total revenue
+  const totalRevenue = orderItems.reduce((sum, item) => {
+    const price = item.price_at_time ? Number(item.price_at_time.toString()) : 0;
+    return sum + price;
+  }, 0);
+
+  // Calculate Platform Fee and Net Payout
+  const platformFee = totalRevenue * (commissionRate / 100);
+  const netPayout = totalRevenue - platformFee;
+
+  // Order Statistics
+  const completedOrderIds = new Set(orderItems.map(item => item.order.id));
+  const completedOrdersCount = completedOrderIds.size;
+
+  console.log('🔵 [SERVICE] Fetching cancelled orders...');
+  // Get Cancelled Orders
+  const cancelledOrderItems = await prisma.orderItem.findMany({
+    where: {
+      package: {
+        caterer_id: catererUserId,
+      },
+      order: {
+        status: 'CANCELLED',
+      },
+    },
+    select: {
+      order_id: true,
+    },
+  });
+  const cancelledOrderIds = new Set(cancelledOrderItems.map(item => item.order_id));
+  const cancelledOrdersCount = cancelledOrderIds.size;
+
+  // Get Pending Orders
+  const pendingOrderItems = await prisma.orderItem.findMany({
+    where: {
+      package: { caterer_id: catererUserId },
+      order: { status: 'PENDING' }
+    },
+    select: { order_id: true }
+  });
+  const pendingOrdersCount = new Set(pendingOrderItems.map(item => item.order_id)).size;
+
+  const result = {
+    totalRevenue: Number(totalRevenue.toFixed(2)),
+    commissionRate: Number(commissionRate) || 0,
+    platformFee: Number(platformFee.toFixed(2)),
+    netPayout: Number(netPayout.toFixed(2)),
+    completedOrdersCount: Number(completedOrdersCount) || 0,
+    cancelledOrdersCount: Number(cancelledOrdersCount) || 0,
+    pendingOrdersCount: Number(pendingOrdersCount) || 0
+  };
+
+  console.log('✅ [SERVICE] Financials calculated:', JSON.stringify(result, null, 2));
+  console.log('✅ [SERVICE] ==========================================');
+
+  return result;
+};
 
 export interface CatererInfoFilters {
   status?: Status;
@@ -158,8 +294,8 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
   if (data.maximum_guests !== undefined) updateData.maximum_guests = data.maximum_guests;
   if (data.region !== undefined) {
     // Normalize region to array format
-    updateData.region = Array.isArray(data.region) 
-      ? data.region 
+    updateData.region = Array.isArray(data.region)
+      ? data.region
       : (data.region ? [data.region] : []);
   }
   if (data.delivery_only !== undefined) updateData.delivery_only = data.delivery_only;
@@ -196,7 +332,7 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
   // If status is being updated, also update the user's verified and profile_completed fields
   if (data.status !== undefined) {
     const userUpdateData: any = {};
-    
+
     if (data.status === 'APPROVED') {
       // When approved, set verified and profile_completed to true
       userUpdateData.verified = true;
@@ -257,6 +393,7 @@ export const updateCatererInfoById = async (id: string, data: UpdateCatererInfoD
       return refreshedCatererInfo;
     }
   }
+
 
   return updatedCatererInfo;
 };

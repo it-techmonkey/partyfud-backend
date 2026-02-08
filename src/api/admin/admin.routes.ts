@@ -6,7 +6,10 @@ import ordersRoutes from "./orders/orders.routes";
 
 const router = Router();
 
+console.log('✅ [Routes] Admin routes initializing...');
+
 // Mount catererinfo routes at /catererinfo
+// The financials route is defined inside catererinfo.routes.ts before the /:id route
 router.use("/catererinfo", catererinfoRoutes);
 
 // Mount dashboard routes at /dashboard
@@ -26,5 +29,6 @@ router.get("/", (_req, res) => {
   });
 });
 
-export default router;
+console.log('✅ [Routes] Admin routes initialized');
 
+export default router;

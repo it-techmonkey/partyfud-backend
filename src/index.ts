@@ -17,6 +17,14 @@ app.get("/", (_req, res) => {
   res.send("API is running 🚀");
 });
 
+// Debug: Log all incoming requests to /api/admin BEFORE routes
+app.use("/api/admin", (req, res, next) => {
+  console.log('🔵 [INCOMING REQUEST]', req.method, req.path);
+  console.log('🔵 [INCOMING REQUEST] Query:', req.query);
+  console.log('🔵 [INCOMING REQUEST] Params:', req.params);
+  next();
+});
+
 // API routes with prefixes: /api/user, /api/admin, /api/caterer
 app.use("/api", apiRoutes);
 
