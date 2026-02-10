@@ -759,10 +759,10 @@ export const createCustomPackage = async (
 const formatPackageResponse = async (pkg: any) => {
   // Support both minimum_people and people_count during migration
   const minimumPeople = pkg.minimum_people || pkg.people_count || 1;
-  
+
   let totalPrice = Number(pkg.total_price);
   const isCustomPrice = pkg.is_custom_price ?? false;
-  
+
   // Recalculate price for non-custom packages if they have items
   // This ensures serves_people is properly applied even if dishes were updated
   if (!isCustomPrice && pkg.items && pkg.items.length > 0) {

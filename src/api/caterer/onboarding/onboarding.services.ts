@@ -26,8 +26,8 @@ interface OnboardingData {
  */
 export const saveDraft = async (userId: string, data: OnboardingData) => {
   // Normalize region to array format
-  const regionArray = Array.isArray(data.region) 
-    ? data.region 
+  const regionArray = Array.isArray(data.region)
+    ? data.region
     : (data.region ? [data.region] : []);
 
   // Use upsert to create or update caterer info
@@ -118,8 +118,8 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
  */
 export const submit = async (userId: string, data: OnboardingData) => {
   // Normalize region to array format
-  const regionArray = Array.isArray(data.region) 
-    ? data.region 
+  const regionArray = Array.isArray(data.region)
+    ? data.region
     : (data.region ? [data.region] : []);
 
   // Validate required fields for final submission
@@ -212,7 +212,7 @@ export const submit = async (userId: string, data: OnboardingData) => {
   // Update user type to CATERER and company_name upon successful onboarding submission
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { 
+    data: {
       type: "CATERER",
       company_name: data.business_name, // Set company_name from business_name
     },

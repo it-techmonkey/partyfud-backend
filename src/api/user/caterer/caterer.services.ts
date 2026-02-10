@@ -55,7 +55,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
   if ((minGuests !== undefined && minGuests > 0) || (maxGuests !== undefined && maxGuests > 0)) {
     // For ranges to overlap: caterer.min <= user.max AND caterer.max >= user.min
     const guestConditions: any[] = [];
-    
+
     // If minGuests is provided: caterer must be able to handle at least this many
     // This means: caterer.maximum_guests >= minGuests (caterer can handle at least minGuests)
     if (minGuests !== undefined && minGuests > 0) {
@@ -66,7 +66,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
         ],
       });
     }
-    
+
     // If maxGuests is provided: caterer's minimum must not exceed this
     // This means: caterer.minimum_guests <= maxGuests (caterer's min is not more than maxGuests)
     if (maxGuests !== undefined && maxGuests > 0) {
@@ -77,7 +77,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
         ],
       });
     }
-    
+
     if (guestConditions.length > 0) {
       andConditions.push({
         AND: guestConditions,
@@ -112,20 +112,20 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
   // Filter by menu type (delivery_only, delivery_plus_setup, full_service)
   if (menuType) {
     const menuConditions: any[] = [];
-    
+
     if (menuType.fixed) {
       // Fixed menu typically means delivery_only or delivery_plus_setup
       menuConditions.push({ delivery_only: true });
       menuConditions.push({ delivery_plus_setup: true });
     }
-    
+
     if (menuType.customizable) {
       // Customizable can be any service type
       menuConditions.push({ delivery_only: true });
       menuConditions.push({ delivery_plus_setup: true });
       menuConditions.push({ full_service: true });
     }
-    
+
     if (menuType.liveStations) {
       // Live stations typically require full_service
       menuConditions.push({ full_service: true });
@@ -266,7 +266,7 @@ export const filterCaterers = async (params: FilterCaterersParams) => {
     // Only apply menu type filter if not all options are selected
     const allSelected = menuType.fixed && menuType.customizable && menuType.liveStations;
     const noneSelected = !menuType.fixed && !menuType.customizable && !menuType.liveStations;
-    
+
     if (!allSelected && !noneSelected) {
       filteredCaterers = filteredCaterers.filter((caterer) => {
         if (!caterer.packages || caterer.packages.length === 0) {
@@ -372,8 +372,8 @@ const formatCatererData = (caterer: any) => {
     phone: caterer.phone,
     image_url: caterer.image_url,
     cuisines: cuisineTypes,
-    location: Array.isArray(caterer.catererinfo?.region) 
-      ? caterer.catererinfo.region.join(', ') 
+    location: Array.isArray(caterer.catererinfo?.region)
+      ? caterer.catererinfo.region.join(', ')
       : (caterer.catererinfo?.region || "Unknown"),
     minPrice: minPricePerPerson,
     maxPrice: maxPricePerPerson,
@@ -550,20 +550,20 @@ export const getDishesByCatererId = async (catererId: string) => {
     } : null,
     sub_category: dish.sub_category
       ? {
-          id: dish.sub_category.id,
-          name: dish.sub_category.name,
-          description: dish.sub_category.description,
-        }
+        id: dish.sub_category.id,
+        name: dish.sub_category.name,
+        description: dish.sub_category.description,
+      }
       : null,
     caterer: dish.caterer
       ? {
-          id: dish.caterer.id,
-          name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
-          location: dish.caterer.catererinfo?.service_area || 
-            (Array.isArray(dish.caterer.catererinfo?.region) 
-              ? dish.caterer.catererinfo.region.join(', ') 
-              : dish.caterer.catererinfo?.region) || null,
-        }
+        id: dish.caterer.id,
+        name: dish.caterer.catererinfo?.business_name || dish.caterer.company_name || 'Unknown',
+        location: dish.caterer.catererinfo?.service_area ||
+          (Array.isArray(dish.caterer.catererinfo?.region)
+            ? dish.caterer.catererinfo.region.join(', ')
+            : dish.caterer.catererinfo?.region) || null,
+      }
       : null,
     quantity: dish.quantity,
     pieces: dish.pieces,

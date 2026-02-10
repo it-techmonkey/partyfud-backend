@@ -45,8 +45,8 @@ export const createProposal = async (userId: string, input: CreateProposalInput)
   // Parse event_date if it's a string
   let eventDate: Date | undefined = undefined;
   if (input.event_date) {
-    eventDate = typeof input.event_date === 'string' 
-      ? new Date(input.event_date) 
+    eventDate = typeof input.event_date === 'string'
+      ? new Date(input.event_date)
       : input.event_date;
   }
 
