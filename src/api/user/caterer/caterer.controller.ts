@@ -76,7 +76,7 @@ export const filterCaterers = async (
 };
 
 /**
- * Get caterer by ID
+ * Get caterer by slug (or ID for backward compatibility)
  * GET /api/user/caterers/:id
  */
 export const getCatererById = async (
@@ -91,7 +91,7 @@ export const getCatererById = async (
       res.status(400).json({
         success: false,
         error: {
-          message: "Caterer ID is required",
+          message: "Caterer slug or ID is required",
         },
       });
       return;

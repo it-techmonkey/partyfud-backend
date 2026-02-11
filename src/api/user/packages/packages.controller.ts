@@ -14,14 +14,14 @@ export const getPackagesByCatererId = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Support both query parameter and route parameter
-    const catererId = req.params.catererId || req.query.caterer_id;
+    // Support both query parameter and route parameter, and slug
+    const catererId = req.params.catererId || req.query.caterer_id || req.query.caterer_slug;
 
     if (!catererId || typeof catererId !== "string") {
       res.status(400).json({
         success: false,
         error: {
-          message: "Caterer ID is required",
+          message: "Caterer ID or slug is required",
         },
       });
       return;

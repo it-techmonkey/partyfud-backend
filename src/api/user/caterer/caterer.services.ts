@@ -1,5 +1,45 @@
 import prisma from "../../../lib/prisma";
 
+/**
+ * Generate a URL-friendly slug from a string
+ */
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Generate a unique slug, appending a counter suffix if needed
+ */
+export async function generateUniqueSlug(name: string, excludeId?: string): Promise<string> {
+  let baseSlug = generateSlug(name || "caterer");
+  if (!baseSlug) baseSlug = "caterer";
+
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const existing = await prisma.catererinfo.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!existing || (excludeId && existing.id === excludeId)) {
+      break;
+    }
+
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
 export interface FilterCaterersParams {
   location?: string;
   guests?: number;
@@ -364,6 +404,7 @@ const formatCatererData = (caterer: any) => {
 
   return {
     id: caterer.id,
+    slug: caterer.catererinfo?.slug || caterer.id,
     name: caterer.catererinfo?.business_name || caterer.company_name || `${caterer.first_name} ${caterer.last_name}`,
     first_name: caterer.first_name,
     last_name: caterer.last_name,
@@ -424,15 +465,67 @@ const formatCatererData = (caterer: any) => {
 };
 
 /**
- * Get a single caterer by ID
+ * Get a single caterer by slug (or fallback to ID for backward compatibility)
  */
-export const getCatererById = async (catererId: string) => {
+export const getCatererById = async (slugOrId: string) => {
+  // Try to find by slug first, then fallback to ID
   const caterer = await prisma.user.findFirst({
     where: {
-      id: catererId,
       type: "CATERER",
       catererinfo: {
-        status: "APPROVED", // Only return approved caterers
+        status: "APPROVED",
+        slug: slugOrId,
+      },
+    },
+    include: {
+      catererinfo: true,
+      packages: {
+        where: {
+          is_active: true,
+          is_available: true,
+        },
+        include: {
+          items: {
+            include: {
+              dish: {
+                include: {
+                  cuisine_type: true,
+                  category: true,
+                  sub_category: true,
+                },
+              },
+            },
+          },
+          occasions: {
+            include: {
+              occassion: true,
+            },
+          },
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+      },
+      dishes: {
+        where: {
+          is_active: true,
+        },
+        include: {
+          cuisine_type: true,
+          category: true,
+          sub_category: true,
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+      },
+    },
+  }) || await prisma.user.findFirst({
+    where: {
+      id: slugOrId,
+      type: "CATERER",
+      catererinfo: {
+        status: "APPROVED",
       },
     },
     include: {
@@ -491,11 +584,19 @@ export const getCatererById = async (catererId: string) => {
  * Get all dishes by caterer ID
  * Only returns active dishes from approved caterers
  */
-export const getDishesByCatererId = async (catererId: string) => {
-  // First verify the caterer exists and is approved
+export const getDishesByCatererId = async (slugOrId: string) => {
+  // First verify the caterer exists and is approved (try slug first, fallback to ID)
   const caterer = await prisma.user.findFirst({
     where: {
-      id: catererId,
+      type: "CATERER",
+      catererinfo: {
+        status: "APPROVED",
+        slug: slugOrId,
+      },
+    },
+  }) || await prisma.user.findFirst({
+    where: {
+      id: slugOrId,
       type: "CATERER",
       catererinfo: {
         status: "APPROVED",
@@ -510,7 +611,7 @@ export const getDishesByCatererId = async (catererId: string) => {
   // Get all active dishes for this caterer
   const dishes = await prisma.dish.findMany({
     where: {
-      caterer_id: catererId,
+      caterer_id: caterer.id,
       is_active: true,
     },
     include: {

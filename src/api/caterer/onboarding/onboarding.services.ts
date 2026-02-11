@@ -1,4 +1,5 @@
 import prisma from "../../../lib/prisma";
+import { generateUniqueSlug } from "../../user/caterer/caterer.services";
 
 interface OnboardingData {
   business_name: string;
@@ -32,11 +33,21 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
 
   // Use upsert to create or update caterer info
   // This handles both first-time onboarding and updating existing drafts
+  // Generate slug from business_name
+  const existingInfo = await prisma.catererinfo.findUnique({
+    where: { caterer_id: userId },
+    select: { id: true, slug: true },
+  });
+  const slug = data.business_name && data.business_name !== "Draft"
+    ? await generateUniqueSlug(data.business_name, existingInfo?.id)
+    : existingInfo?.slug || null;
+
   const updated = await prisma.catererinfo.upsert({
     where: { caterer_id: userId },
     create: {
       caterer_id: userId,
       business_name: data.business_name || "Draft",
+      slug,
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
       region: regionArray,
@@ -59,6 +70,7 @@ export const saveDraft = async (userId: string, data: OnboardingData) => {
     },
     update: {
       business_name: data.business_name || "Draft",
+      slug,
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
       region: regionArray,
@@ -128,11 +140,19 @@ export const submit = async (userId: string, data: OnboardingData) => {
   }
 
   // Use upsert to create or update caterer info
+  // Generate slug from business_name
+  const existingInfo = await prisma.catererinfo.findUnique({
+    where: { caterer_id: userId },
+    select: { id: true },
+  });
+  const slug = await generateUniqueSlug(data.business_name, existingInfo?.id);
+
   const updated = await prisma.catererinfo.upsert({
     where: { caterer_id: userId },
     create: {
       caterer_id: userId,
       business_name: data.business_name,
+      slug,
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
       region: regionArray,
@@ -156,6 +176,7 @@ export const submit = async (userId: string, data: OnboardingData) => {
     },
     update: {
       business_name: data.business_name,
+      slug,
       business_type: data.business_type || "Not Specified",
       business_description: data.business_description,
       region: regionArray,

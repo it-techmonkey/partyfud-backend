@@ -36,6 +36,7 @@ model User {
 model catererinfo {
   id                   String         @id @default(uuid())
   business_name        String
+  slug                 String?        @unique
   business_type        String
   business_description String?
   service_area         String?

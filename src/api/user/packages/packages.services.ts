@@ -4,11 +4,19 @@ import prisma from "../../../lib/prisma";
  * Get all active and available packages by caterer ID
  * Only returns packages for approved caterers
  */
-export const getPackagesByCatererId = async (catererId: string) => {
-  // First verify the caterer exists and is approved
+export const getPackagesByCatererId = async (slugOrId: string) => {
+  // First verify the caterer exists and is approved (try slug, fallback to ID)
   const caterer = await prisma.user.findFirst({
     where: {
-      id: catererId,
+      type: "CATERER",
+      catererinfo: {
+        status: "APPROVED",
+        slug: slugOrId,
+      },
+    },
+  }) || await prisma.user.findFirst({
+    where: {
+      id: slugOrId,
       type: "CATERER",
       catererinfo: {
         status: "APPROVED",
@@ -23,7 +31,7 @@ export const getPackagesByCatererId = async (catererId: string) => {
   // Get all active and available packages for this caterer (only created by CATERER)
   const packages = await prisma.package.findMany({
     where: {
-      caterer_id: catererId,
+      caterer_id: caterer.id,
       is_active: true,
       is_available: true,
       created_by: "CATERER", // Only show packages created by caterers
@@ -790,6 +798,7 @@ const formatPackageResponse = async (pkg: any) => {
     // Only include caterer if the relation was fetched
     caterer: pkg.caterer ? {
       id: pkg.caterer.id,
+      slug: pkg.caterer.catererinfo?.slug || pkg.caterer.id,
       name: pkg.caterer.catererinfo?.business_name || pkg.caterer.company_name || 'Unknown',
       location: pkg.caterer.catererinfo?.service_area ||
         (Array.isArray(pkg.caterer.catererinfo?.region)
