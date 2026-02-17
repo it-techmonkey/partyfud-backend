@@ -100,8 +100,15 @@ export const createCartItem = async (
     // Use provided price_at_time if explicitly set
     basePrice = input.price_at_time;
   } else if (packageData.is_custom_price) {
-    // For custom prices, use total_price as-is (doesn't scale with guest count)
-    basePrice = Number(packageData.total_price);
+    // For FIXED packages, scale price based on multiples of minimum_people
+    // For CUSTOMISABLE packages, use total_price as-is (doesn't scale)
+    if (packageData.customisation_type === 'FIXED') {
+      const minPeople = packageData.minimum_people || 1;
+      basePrice = (Number(packageData.total_price) / minPeople) * guestCount;
+    } else {
+      // CUSTOMISABLE with custom price: use total_price as-is
+      basePrice = Number(packageData.total_price);
+    }
   } else if (packageData.items && packageData.items.length > 0) {
     // Calculate from package items using serves_people
     const { calculateDishPriceForGuests } = await import('../../caterer/packages/packages.services');
@@ -365,8 +372,15 @@ export const updateCartItem = async (
   } else if (packageData) {
     // Recalculate based on package items and serves_people
     if (packageData.is_custom_price) {
-      // For custom prices, use total_price as-is (doesn't scale with guest count)
-      basePrice = Number(packageData.total_price);
+      // For FIXED packages, scale price based on multiples of minimum_people
+      // For CUSTOMISABLE packages, use total_price as-is (doesn't scale)
+      if (packageData.customisation_type === 'FIXED') {
+        const minPeople = packageData.minimum_people || 1;
+        basePrice = (Number(packageData.total_price) / minPeople) * guestCount;
+      } else {
+        // CUSTOMISABLE with custom price: use total_price as-is
+        basePrice = Number(packageData.total_price);
+      }
     } else if (packageData.items && packageData.items.length > 0) {
       // Calculate from package items using serves_people
       const { calculateDishPriceForGuests } = await import('../../caterer/packages/packages.services');
